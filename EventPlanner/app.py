@@ -183,7 +183,7 @@ root.columnconfigure(0, weight=1)
 
 main_menu = CTk.Frame(master=root)
 guest_menu = CTk.Frame(master=root)
-task_menu = CTk.Frame(master=root)
+task_menu = Tasks(root, title="hello from app")
 budget_menu = CTk.Frame(master=root)
 
 for frame in (main_menu, guest_menu, task_menu, budget_menu):
