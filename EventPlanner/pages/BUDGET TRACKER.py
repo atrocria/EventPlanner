@@ -1,104 +1,198 @@
-import tkinter as tk
+import customtkinter as ctk
 from tkinter import messagebox, simpledialog
 
-# ------------------------------
-# DATA STORAGE
-# ------------------------------
-budget_items = []
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
 
-# ------------------------------
-# BUDGET TRACKER FUNCTIONS
-# ------------------------------
-def add_expense():
-    item = budget_item_entry.get().strip()
-    amount = budget_amount_entry.get().strip()
+# --------------------------
+# DATA
+# --------------------------
+transactions = []  # Each entry: {"category": str, "amount": float, "type": "Income"/"Expense"}
 
-    if not item or not amount:
-        messagebox.showerror("Error", "Item and amount cannot be empty.")
+def show_frame(frame):
+    frame.tkraise()
+
+# --------------------------
+# FUNCTIONS
+# --------------------------
+def add_transaction():
+    category = category_entry.get().strip()
+    amount_str = amount_entry.get().strip()
+    t_type = type_var.get()
+
+    if not category or not amount_str:
+        messagebox.showerror("Error", "Category and amount cannot be empty.")
         return
 
     try:
-        amount = float(amount)
-    except:
+        amount = float(amount_str)
+    except ValueError:
         messagebox.showerror("Error", "Amount must be a number.")
         return
 
-    budget_items.append({"item": item, "amount": amount})
-    messagebox.showinfo("Success", f"Added: {item} (RM{amount})")
+    transactions.append({"category": category, "amount": amount, "type": t_type})
+    messagebox.showinfo("Success", f"{t_type} added: {category} - {amount:.2f}")
+    clear_form()
 
-    budget_item_entry.delete(0, tk.END)
-    budget_amount_entry.delete(0, tk.END)
-    update_budget_total()
+def view_transactions():
+    if not transactions:
+        messagebox.showinfo("Budget Tracker", "No transactions yet.")
+    else:
+        total_income = sum(t["amount"] for t in transactions if t["type"] == "Income")
+        total_expense = sum(t["amount"] for t in transactions if t["type"] == "Expense")
+        balance = total_income - total_expense
 
-def view_expenses():
-    if not budget_items:
-        messagebox.showinfo("Budget", "No expenses added.")
+        trans_str = "\n".join(
+            f"- {t['category']} ({t['type']}: {t['amount']:.2f})" for t in transactions
+        )
+        messagebox.showinfo(
+            "Budget Tracker",
+            f"Total Income: {total_income:.2f}\n"
+            f"Total Expense: {total_expense:.2f}\n"
+            f"Balance: {balance:.2f}\n\nTransactions:\n{trans_str}"
+        )
+
+def remove_transaction():
+    if not transactions:
+        messagebox.showinfo("Info", "No transactions to remove.")
         return
 
-    text = "\n".join(f"- {b['item']}: RM{b['amount']}" for b in budget_items)
-    total = sum(b["amount"] for b in budget_items)
-
-    messagebox.showinfo("Budget List", f"{text}\n\nTotal: RM{total}")
-
-def remove_expense():
-    if not budget_items:
-        messagebox.showinfo("Info", "No expenses to remove.")
-        return
-
-    names = [b['item'] for b in budget_items]
-    choice = simpledialog.askstring("Remove Expense", f"Enter item to remove:\n{', '.join(names)}")
+    categories = [t['category'] for t in transactions]
+    choice = simpledialog.askstring("Remove Transaction",
+                                    f"Enter category to remove:\n{', '.join(categories)}")
 
     if not choice:
         return
 
-    for b in budget_items:
-        if b["item"].lower() == choice.lower():
-            budget_items.remove(b)
-            messagebox.showinfo("Success", "Expense removed!")
-            update_budget_total()
+    for t in transactions:
+        if t["category"].lower() == choice.lower():
+            transactions.remove(t)
+            messagebox.showinfo("Success", "Transaction removed!")
+            update_summary()
             return
 
-    messagebox.showerror("Error", "Item not found!")
+    messagebox.showerror("Error", "Transaction not found!")
 
-def update_budget_total():
-    total = sum(b["amount"] for b in budget_items)
-    budget_total_label.config(text=f"Total: RM {total}")
+def clear_form():
+    category_entry.delete(0, "end")
+    amount_entry.delete(0, "end")
+    type_var.set("Expense")
+    update_summary()
 
-# ------------------------------
-# GUI SETUP
-# ------------------------------
-root = tk.Tk()
+def update_summary():
+    total_income = sum(t["amount"] for t in transactions if t["type"] == "Income")
+    total_expense = sum(t["amount"] for t in transactions if t["type"] == "Expense")
+    balance = total_income - total_expense
+    summary_label.configure(
+        text=f"Income: {total_income:.2f} | Expense: {total_expense:.2f} | Balance: {balance:.2f}"
+    )
+
+# --------------------------
+# MAIN WINDOW
+# --------------------------
+root = ctk.CTk()
 root.title("Budget Tracker")
-root.geometry("400x400")
-root.configure(bg="#d3d3d3")
+root.geometry("450x600")
 
-tk.Label(root, text="BUDGET TRACKER",
-         font=("Arial", 18, "bold"), bg="#d3d3d3").pack(pady=10)
+root.grid_rowconfigure(0, weight=1)
+root.grid_columnconfigure(0, weight=1)
 
-budget_total_label = tk.Label(root, text="Total: RM 0",
-                              font=("Arial", 12), bg="#d3d3d3")
-budget_total_label.pack(pady=5)
+main_menu = ctk.CTkFrame(root, fg_color="transparent", corner_radius=0)
+budget_menu = ctk.CTkFrame(root, fg_color="transparent", corner_radius=0)
 
-# Form
-tk.Label(root, text="Item:", font=("Arial", 11), bg="#d3d3d3").pack()
-budget_item_entry = tk.Entry(root, font=("Arial", 11), width=25)
-budget_item_entry.pack(pady=5)
+for frame in (main_menu, budget_menu):
+    frame.grid(row=0, column=0, sticky="nsew")
 
-tk.Label(root, text="Amount (RM):", font=("Arial", 11), bg="#d3d3d3").pack()
-budget_amount_entry = tk.Entry(root, font=("Arial", 11), width=25)
-budget_amount_entry.pack(pady=5)
+# --------------------------
+# MAIN MENU UI
+# --------------------------
+ctk.CTkLabel(main_menu, text="BUDGET TRACKER", font=("Arial", 26, "bold")).pack(pady=40)
 
-# Buttons
-tk.Button(root, text="Add Expense", font=("Arial", 11, "bold"),
-          width=15, height=2, bg="#4CAF50", fg="white",
-          command=add_expense).pack(pady=5)
+ctk.CTkButton(main_menu,
+              text="Manage Budget",
+              width=200,
+              height=50,
+              command=lambda: show_frame(budget_menu)).pack(pady=20)
 
-tk.Button(root, text="View Expenses", font=("Arial", 11, "bold"),
-          width=15, height=2, bg="#2196F3", fg="white",
-          command=view_expenses).pack(pady=5)
+# --------------------------
+# BUDGET MANAGER UI
+# --------------------------
+container = ctk.CTkFrame(budget_menu, fg_color="transparent", corner_radius=0)
+container.place(relx=0.5, rely=0.5, anchor="center")
 
-tk.Button(root, text="Remove Expense", font=("Arial", 11, "bold"),
-          width=15, height=2, bg="#FF9800", fg="white",
-          command=remove_expense).pack(pady=5)
+header = ctk.CTkFrame(container, fg_color="transparent", corner_radius=0)
+header.pack(pady=(0, 15))
 
+ctk.CTkLabel(header, text="BUDGET MANAGER",
+             font=("Arial", 20, "bold")).pack()
+
+summary_label = ctk.CTkLabel(header,
+                             text="Income: 0.00 | Expense: 0.00 | Balance: 0.00",
+                             font=("Arial", 14))
+summary_label.pack(pady=5)
+
+# --------------------------
+# FORM SECTION
+# --------------------------
+form = ctk.CTkFrame(container, fg_color="transparent", corner_radius=0)
+form.pack(pady=15)
+
+ctk.CTkLabel(form, text="Category:", font=("Arial", 14)).pack(anchor="w")
+category_entry = ctk.CTkEntry(form, width=260, corner_radius=8)
+category_entry.pack(pady=5)
+
+ctk.CTkLabel(form, text="Amount:", font=("Arial", 14)).pack(anchor="w", pady=(10, 0))
+amount_entry = ctk.CTkEntry(form, width=260, corner_radius=8)
+amount_entry.pack(pady=5)
+
+ctk.CTkLabel(form, text="Type:", font=("Arial", 14)).pack(anchor="w", pady=(10, 0))
+type_var = ctk.StringVar(value="Expense")
+type_dropdown = ctk.CTkComboBox(form, values=["Income", "Expense"], variable=type_var,
+                                width=260, corner_radius=8)
+type_dropdown.pack(pady=5)
+
+# --------------------------
+# BUTTONS
+# --------------------------
+btn_frame = ctk.CTkFrame(container, fg_color="transparent", corner_radius=0)
+btn_frame.pack(pady=20)
+
+ctk.CTkButton(btn_frame,
+              text="Add Transaction", width=180,
+              fg_color="#3A6EA5",
+              hover_color="#ff8800",
+              command=add_transaction)\
+    .grid(row=0, column=0, padx=5, pady=5)
+
+ctk.CTkButton(btn_frame,
+              text="View Transactions", width=180,
+              fg_color="#3A6EA5",
+              hover_color="#ff8800",
+              command=view_transactions)\
+    .grid(row=0, column=1, padx=5, pady=5)
+
+ctk.CTkButton(btn_frame,
+              text="Remove Transaction", width=180,
+              fg_color="#3A6EA5",
+              hover_color="#ff8800",
+              command=remove_transaction)\
+    .grid(row=1, column=0, padx=5, pady=5)
+
+ctk.CTkButton(btn_frame,
+              text="Clear Form", width=180,
+              fg_color="#3A6EA5",
+              hover_color="#ff8800",
+              command=clear_form)\
+    .grid(row=1, column=1, padx=5, pady=5)
+
+# Back Button
+ctk.CTkButton(container,
+              text="← Back to Main Menu",
+              width=200,
+              fg_color="#1f6aa5",
+              hover_color="#ff8800",
+              command=lambda: show_frame(main_menu))\
+        .pack(pady=15)
+
+show_frame(main_menu)
 root.mainloop()
