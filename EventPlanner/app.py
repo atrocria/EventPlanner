@@ -1,13 +1,13 @@
 #dependencies
-import  datetime
-#import  tkinter         as tk
-from    tkinter         import ttk, messagebox, simpledialog
 import customtkinter
-from    customtkinter   import CTk, CTkInputDialog, CTkButton, CTkLabel
+from    customtkinter   import CTk, CTkInputDialog, CTkButton, CTkLabel, CTkFrame
 
 #import pages
+from pages.sidebarUI        import SideBarUI
 from pages.dashboardUI      import DashboardUI
 from pages.taskUI           import TaskUI
+from pages.taskController   import TaskController
+from pages.tasksServices    import TaskServices
 # from pages.guestlist      import GuestList
 # from pages.calculator     import Calculator
 # from pages.timer          import Timer
@@ -27,32 +27,32 @@ def show_frame(frame):
 #root main window setup + darkmode
 root = CTk()
 root.title("Event Planner")
-root.geometry("430x500")
+root.geometry("1200x800")
 customtkinter.set_appearance_mode("Dark")
 
 #configure how menu should be arranged
 root.rowconfigure(0, weight=1)
-root.columnconfigure(0, weight=1)
-
-#! side bar section
-#sidebar = ttk.Frame(self, width=80)
-#sidebar.grid(row=0, column=0, sticky="ns")
-#sidebar.grid_propagate(False)
+root.columnconfigure(0, weight=0)
+root.columnconfigure(1, weight=1)
 
 #setting up page names
+sidebar = SideBarUI(root, title="menu bar")
+sidebar.grid(row=0, column=0, sticky="ns")
 dashboard = DashboardUI(root)
 # guest_menu = GuestList(root)
-task_menu = TaskUI(root, back_target=dashboard, title="hello from app")
+
+task_controller = TaskController(TaskServices())
+task_menu = TaskUI(root, controller=task_controller, back_target=dashboard, title="hello from app")
 # budget_menu = Calculator(root)
 
 #displaying each option
 #! need refactoring
 for frame in (dashboard, 
-            #   guest_menu, 
-              task_menu, 
-            #   budget_menu
-              ):
-    frame.grid(row=0, column=0, sticky="nsew")
+          #   guest_menu, 
+            task_menu, 
+          #   budget_menu
+            ):
+  frame.grid(row=0, column=1, sticky="nsew")
 
 CTkLabel(dashboard, text="EVENT PLANNER", font=("Arial", 18, "bold")).pack(pady=20)
     

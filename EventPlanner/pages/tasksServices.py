@@ -1,16 +1,22 @@
-import pages.tasksModel as TaskModel
+from pages.tasksModel import TaskModel
 
-class taskServices():
+class TaskServices():
     def __init__(self):
-        self.tasks = []
+        self.tasks: list[TaskModel] = []
 
-    def add(self, text):
+    def add(self, text: str) -> TaskModel:
         task = TaskModel(text)
         self.tasks.append(task)
         return task
 
-    def delete(self, task):
-        self.tasks.remove(task)
+    def delete_by_id(self, task_id: str):
+        self.tasks = [t for t in self.tasks if t.id != task_id]
 
-    def toggle(self, task):
-        task.toggle()
+    def toggle_by_id(self, task_id: str):
+        for t in self.tasks:
+            if t.id == task_id:
+                t.toggle()
+                break
+            
+    def all(self):
+        return list(self.tasks)
