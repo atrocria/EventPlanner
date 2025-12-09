@@ -1,7 +1,7 @@
 import customtkinter as ctk
-from model import CountdownModel
-from service import CountdownService
-from view import CountdownUI
+from EventPlanner.countdownModel import CountdownModel
+from EventPlanner.countdownService import CountdownService
+from EventPlanner.countdownUI import CountdownUI
 
 if __name__ == "__main__":
     ctk.set_appearance_mode("dark")        # optional: "light", "dark", or "system"

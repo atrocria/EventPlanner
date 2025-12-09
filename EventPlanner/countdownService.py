@@ -1,4 +1,4 @@
-from model import CountdownModel
+from EventPlanner.countdownModel import CountdownModel
 
 class CountdownService:
     def __init__(self, model: CountdownModel):

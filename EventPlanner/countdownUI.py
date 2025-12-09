@@ -1,8 +1,8 @@
 import customtkinter as ctk
 from tkinter import messagebox  # can keep this for popups
-from model import CountdownModel
-from service import CountdownService
-from stage_machine import TimerState
+from EventPlanner.countdownModel import CountdownModel
+from EventPlanner.countdownService import CountdownService
+from EventPlanner.timerStateMachine import TimerState
 
 # ===== CONFIG =====
 RADIUS = 100

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from stage_machine import TimerState
+from EventPlanner.timerStateMachine import TimerState
 
 class CountdownModel:
     def __init__(self):
