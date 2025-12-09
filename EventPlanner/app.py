@@ -8,7 +8,20 @@ from pages.dashboardUI      import DashboardUI
 from pages.taskUI           import TaskUI
 from pages.taskController   import TaskController
 from pages.tasksServices    import TaskServices
+
 # from pages.guestlist      import GuestList
+from pages.guestlistUI import GuestListUI
+from pages.guestlistController import GuestListController
+
+dashboard = DashboardUI(root)
+guest_controller = GuestListController()
+guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
+
+for frame in (dashboard, guest_menu, task_menu):
+    frame.grid(row=0, column=1, sticky="nsew")
+
+CTkButton(dashboard, text="Guest Manager", width=25, command=lambda: show_frame(guest_menu)).pack(pady=5)
+
 # from pages.calculator     import Calculator
 # from pages.timer          import Timer
 
