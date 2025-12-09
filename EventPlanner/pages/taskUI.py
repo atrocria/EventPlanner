@@ -1,5 +1,7 @@
 import customtkinter as ctk
-from customtkinter import CTk,CTkFrame, CTkEntry, CTkButton, CTkLabel
+from customtkinter import CTk,CTkFrame, CTkEntry, CTkButton, CTkLabel, CTkCheckBox, CTkScrollableFrame, CTkFont
+from pages.taskController import TaskController
+from pages.tasksModel import TaskModel
 
 # with each enter, create a new dialog box with a checkbar on the left
 # create a new dialog box that is grayed out at the bottom of the last task
@@ -9,22 +11,103 @@ from customtkinter import CTk,CTkFrame, CTkEntry, CTkButton, CTkLabel
 #services controllers state machines
 
 class TaskItem(CTkFrame):
-    def __init__(self, parent, task, on_delete):
+    def __init__(self, parent, task: TaskModel, on_delete, on_edited):
         super().__init__(parent, fg_color="#2a2a2a", corner_radius=6)
         self.task = task
         self.on_delete = on_delete
+        self.on_edited = on_edited
+        self.edit_entry = None
+        self.resize_cooldown = None
         
-        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        
+        self.normal_font = CTkFont(family="Arial", size=15)
+        self.strike_font = CTkFont(family="Arial", size=15)
+        self.strike_font.configure(overstrike=1)
 
-        self.label = CTkLabel(self, text=task.text)
-        self.label.grid(row=0, column=0, sticky="w", padx=10, pady=5)
+        self.label = CTkLabel(self, text=task.text, anchor="w", justify="left", wraplength=1200, font=self.normal_font)
+        self.label.grid(row=0, column=1, sticky="ew", padx=10, pady=5)
+        
+        self.bind("<Configure>", self.on_resize)
+        
+        # double click to edit using bind
+        self.label.bind("<Double-Button-1>", self.start_edit)
+        
+        # checkbox button
+        check_var = ctk.StringVar(value="off")
+        self.check_box = CTkCheckBox(self, text=None, command=lambda: self.checked(check_var), variable=check_var, onvalue="on", offvalue="off", width=24)
+        self.check_box.grid(row=0, column=0, padx=5, pady=5)
 
+        # delete button
         self.delete_button = CTkButton(self, text="X", width=40, command=lambda: self.on_delete(self.task.id))
-        self.delete_button.grid(row=0, column=1, padx=5, pady=5)
+        self.delete_button.grid(row=0, column=2, padx=5, pady=5)
+    
+    # check if in cooldown, go to apply resize function
+    def on_resize(self, event):
+        if self.resize_cooldown:
+            self.after_cancel(self.resize_cooldown)
+
+        # start timer
+        self.resize_cooldown = self.after(100, self.apply_wrap)
+    
+    # resizing
+    def apply_wrap(self):
+        self.resize_cooldown = None
+        
+        new_width = max(self.winfo_width() - 120, 100)
+        self.label.configure(wraplength=new_width)
+    
+    def checked(self, check_var):
+        if check_var.get() == "on":
+            self.label.configure(font=self.strike_font, text_color="gray70")
+        else:
+            self.label.configure(font=self.normal_font, text_color="white")
+        print(check_var.get())
+    
+    def start_edit(self, event=None):
+        # hide the label
+        self.label.grid_remove()
+
+        # make an entry with the current text
+        self.edit_entry = CTkEntry(self, width=250)
+        self.edit_entry.insert(0, self.task.text)
+        self.edit_entry.grid(row=0, column=1, sticky="ew", padx=10, pady=5)
+
+        # focus on entry
+        self.edit_entry.focus()
+
+        # finish / cancel edit scenario
+        self.edit_entry.bind("<Return>", self.finish_edit)
+        
+    def finish_edit(self, event=None):
+        if not self.edit_entry:
+            return
+        
+        edited_text = self.edit_entry.get().strip()
+        if edited_text and edited_text != self.task.text:
+            self.task.text = edited_text
+            self.label.configure(text=edited_text)
+            
+            # tell controller about the change
+            self.on_edited(self.task.id, edited_text)
+
+        # delete entry and show the label with the new text
+        self.edit_entry.destroy()
+        self.edit_entry = None
+        self.label.grid(row=0, column=1, sticky="ew", padx=10, pady=5)
+
+    def cancel_edit(self, event=None):
+        if not self.edit_entry:
+            return
+
+        self.edit_entry.destroy()
+        self.edit_entry = None
+        self.label.grid(row=0, column=0, sticky="w", padx=10, pady=5)
 
 #! set limit to 10
 class TaskUI(CTkFrame):
-    def __init__(self, parent, controller, back_target, title="untitled"):
+    def __init__(self, parent, controller: TaskController, back_target, title="untitled"):
         super().__init__(parent)
         self.controller = controller
         self.back_target = back_target
@@ -40,7 +123,7 @@ class TaskUI(CTkFrame):
         self.rowconfigure(2, weight=0)   # back button
 
         # --- task box area ---
-        self.tasks_box = CTkFrame(self, fg_color="#202020", corner_radius=10)
+        self.tasks_box = CTkScrollableFrame(self, fg_color="#202020", corner_radius=10)
         self.tasks_box.grid(row=0, column=0, sticky="nsew", padx=50, pady=30)
         self.tasks_box.grid_columnconfigure(0, weight=1)
 
@@ -58,9 +141,6 @@ class TaskUI(CTkFrame):
         )
         self.back_button.grid(row=2, column=0, sticky="ew", padx=10, pady=(0, 10))
         
-        #where all the taks live in a dict
-        # self.framedTasks = []
-        
         for task in self.controller.get_task():
             self.add_task_widget(task)
         
@@ -72,7 +152,8 @@ class TaskUI(CTkFrame):
         
         task = self.controller.add_task(text)
         index = len(self.framedTasks)
-        item = TaskItem(self.tasks_box, task, on_delete=self.on_task_deletion)
+        item = TaskItem(self.tasks_box, task, on_delete=self.on_task_deletion, on_edited=self.on_task_edit)
+        
         item.grid(row=index, column=0, sticky="ew", padx=5, pady=5)
         self.framedTasks[task.id] = item
             
@@ -85,7 +166,12 @@ class TaskUI(CTkFrame):
         widget = self.framedTasks.pop(task_id)
         widget.destroy()
         self._regrid_tasks()
+    
+    # tell controller, see TaskItem
+    def on_task_edit(self, task_id, new_text):
+        self.controller.update_task(task_id, new_text)
 
+    # re-configure task alignment
     def _regrid_tasks(self):
         for row, task_id in enumerate(self.framedTasks):
             self.framedTasks[task_id].grid_configure(row=row)

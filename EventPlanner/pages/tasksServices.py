@@ -18,5 +18,8 @@ class TaskServices():
                 t.toggle()
                 break
             
+    def update_text(self, task_id, new_text):
+        pass
+            
     def all(self):
         return list(self.tasks)

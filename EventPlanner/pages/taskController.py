@@ -15,3 +15,6 @@ class TaskController:
 
     def get_task(self):
         return self.service.all()
+    
+    def update_task(self, task_id, new_text):
+        self.service.update_text(task_id, new_text)
