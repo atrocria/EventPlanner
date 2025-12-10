@@ -1,100 +1,108 @@
 # ui.py
-import customtkinter as ctk
+
+import tkinter as tk
+from tkinter import messagebox, simpledialog
+from controller import BudgetController
 
 class BudgetUI:
-    def __init__(self, root, controller):
+    def __init__(self, root):
         self.root = root
-        self.controller = controller
+        self.root.title("Budget Tracker MVC")
+        self.root.geometry("400x420")
+        self.root.configure(bg="#d3d3d3")
 
-        self.root.title("Event Planner - Budget Tracker")
-        self.root.geometry("450x600")
+        self.controller = BudgetController()
 
-        self.root.grid_rowconfigure(0, weight=1)
-        self.root.grid_columnconfigure(0, weight=1)
+        self.setup_ui()
 
-        self.main_menu = ctk.CTkFrame(root, fg_color="transparent", corner_radius=0)
-        self.budget_menu = ctk.CTkFrame(root, fg_color="transparent", corner_radius=0)
+    def setup_ui(self):
+        tk.Label(self.root, text="BUDGET TRACKER",
+                 font=("Arial", 18, "bold"), bg="#d3d3d3").pack(pady=10)
 
-        for frame in (self.main_menu, self.budget_menu):
-            frame.grid(row=0, column=0, sticky="nsew")
+        self.total_label = tk.Label(self.root, text="Total: RM 0",
+                                    font=("Arial", 12), bg="#d3d3d3")
+        self.total_label.pack(pady=5)
 
-        self.build_main_menu()
-        self.build_budget_menu()
+        tk.Label(self.root, text="Item:", font=("Arial", 11), bg="#d3d3d3").pack()
+        self.item_entry = tk.Entry(self.root, font=("Arial", 11), width=25)
+        self.item_entry.pack(pady=5)
 
-        self.show_frame(self.main_menu)
-
-    def show_frame(self, frame):
-        frame.tkraise()
-
-    def build_main_menu(self):
-        ctk.CTkLabel(self.main_menu, text="EVENT PLANNER", font=("Arial", 26, "bold")).pack(pady=40)
-        ctk.CTkButton(self.main_menu,
-                      text="Budget Manager",
-                      width=200,
-                      height=50,
-                      command=lambda: self.show_frame(self.budget_menu)).pack(pady=20)
-
-    def build_budget_menu(self):
-        container = ctk.CTkFrame(self.budget_menu, fg_color="transparent", corner_radius=0)
-        container.place(relx=0.5, rely=0.5, anchor="center")
-
-        header = ctk.CTkFrame(container, fg_color="transparent", corner_radius=0)
-        header.pack(pady=(0, 15))
-
-        ctk.CTkLabel(header, text="EVENT BUDGET MANAGER", font=("Arial", 20, "bold")).pack()
-        self.summary_label = ctk.CTkLabel(header,
-                                          text="Income: 0.00 | Expense: 0.00 | Balance: 0.00",
-                                          font=("Arial", 14))
-        self.summary_label.pack(pady=5)
-
-        form = ctk.CTkFrame(container, fg_color="transparent", corner_radius=0)
-        form.pack(pady=15)
-
-        ctk.CTkLabel(form, text="Category:", font=("Arial", 14)).pack(anchor="w")
-        self.category_entry = ctk.CTkEntry(form, width=260, corner_radius=8)
-        self.category_entry.pack(pady=5)
-
-        ctk.CTkLabel(form, text="Amount:", font=("Arial", 14)).pack(anchor="w", pady=(10, 0))
-        self.amount_entry = ctk.CTkEntry(form, width=260, corner_radius=8)
+        tk.Label(self.root, text="Amount (RM):", font=("Arial", 11),
+                 bg="#d3d3d3").pack()
+        self.amount_entry = tk.Entry(self.root, font=("Arial", 11), width=25)
         self.amount_entry.pack(pady=5)
 
-        ctk.CTkLabel(form, text="Type:", font=("Arial", 14)).pack(anchor="w", pady=(10, 0))
-        self.type_var = ctk.StringVar(value="Expense")
-        type_dropdown = ctk.CTkComboBox(form, values=["Income", "Expense"], variable=self.type_var,
-                                        width=260, corner_radius=8)
-        type_dropdown.pack(pady=5)
+        tk.Button(self.root, text="Add Expense", width=15, height=2,
+                  bg="#4CAF50", fg="white",
+                  command=self.add_expense).pack(pady=5)
 
-        btn_frame = ctk.CTkFrame(container, fg_color="transparent", corner_radius=0)
-        btn_frame.pack(pady=20)
+        tk.Button(self.root, text="View Expenses", width=15, height=2,
+                  bg="#2196F3", fg="white",
+                  command=self.view_expenses).pack(pady=5)
 
-        ctk.CTkButton(btn_frame, text="Add Item", width=180,
-                      fg_color="#3A6EA5", hover_color="#ff8800",
-                      command=self.controller.add_item).grid(row=0, column=0, padx=5, pady=5)
+        tk.Button(self.root, text="Remove Expense", width=15, height=2,
+                  bg="#FF9800", fg="white",
+                  command=self.remove_expense).pack(pady=5)
 
-        ctk.CTkButton(btn_frame, text="View Budget", width=180,
-                      fg_color="#3A6EA5", hover_color="#ff8800",
-                      command=self.controller.view_budget).grid(row=0, column=1, padx=5, pady=5)
+    def add_expense(self):
+        item = self.item_entry.get().strip()
+        amount = self.amount_entry.get().strip()
 
-        ctk.CTkButton(btn_frame, text="Remove Item", width=180,
-                      fg_color="#3A6EA5", hover_color="#ff8800",
-                      command=self.controller.remove_item).grid(row=1, column=0, padx=5, pady=5)
+        if not item or not amount:
+            messagebox.showerror("Error", "Item and amount cannot be empty.")
+            return
 
-        ctk.CTkButton(btn_frame, text="Clear Form", width=180,
-                      fg_color="#3A6EA5", hover_color="#ff8800",
-                      command=self.clear_form).grid(row=1, column=1, padx=5, pady=5)
+        try:
+            amount = float(amount)
+        except:
+            messagebox.showerror("Error", "Amount must be a valid number.")
+            return
 
-        ctk.CTkButton(container, text="← Back to Main Menu", width=200,
-                      fg_color="#1f6aa5", hover_color="#ff8800",
-                      command=lambda: self.show_frame(self.main_menu)).pack(pady=15)
+        self.controller.add_expense(item, amount)
+        messagebox.showinfo("Success", f"Added {item} (RM{amount})")
 
-    def clear_form(self):
-        self.category_entry.delete(0, "end")
-        self.amount_entry.delete(0, "end")
-        self.type_var.set("Expense")
-        self.update_summary()
+        self.item_entry.delete(0, tk.END)
+        self.amount_entry.delete(0, tk.END)
 
-    def update_summary(self):
-        total_income, total_expense, balance = self.controller.service.get_summary()
-        self.summary_label.configure(
-            text=f"Income: {total_income:.2f} | Expense: {total_expense:.2f} | Balance: {balance:.2f}"
-        )
+        self.update_total()
+
+    def view_expenses(self):
+        items = self.controller.view_expenses()
+        if not items:
+            messagebox.showinfo("Expenses", "No expenses added.")
+            return
+
+        text = "\n".join(f"- {i.item}: RM{i.amount}" for i in items)
+        total = self.controller.total_expenses()
+
+        messagebox.showinfo("Expense List", f"{text}\n\nTotal: RM {total}")
+
+    def remove_expense(self):
+        items = self.controller.view_expenses()
+        if not items:
+            messagebox.showinfo("Info", "No items to remove.")
+            return
+
+        names = ", ".join(i.item for i in items)
+        choice = simpledialog.askstring("Remove Expense", f"Enter item to remove:\n{names}")
+
+        if not choice:
+            return
+
+        if self.controller.remove_expense(choice):
+            messagebox.showinfo("Success", "Item removed.")
+        else:
+            messagebox.showerror("Error", "Item not found.")
+
+        self.update_total()
+
+    def update_total(self):
+        total = self.controller.total_expenses()
+        self.total_label.config(text=f"Total: RM {total}")
+
+
+# RUN UI
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = BudgetUI(root)
+    root.mainloop()
