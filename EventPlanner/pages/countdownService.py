@@ -1,4 +1,4 @@
-from EventPlanner.countdownModel import CountdownModel
+from pages.countdownModel import CountdownModel
 
 class CountdownService:
     def __init__(self, model: CountdownModel):
@@ -9,4 +9,3 @@ class CountdownService:
 
     def tick(self):
         self.model.update_remaining()
-

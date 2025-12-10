@@ -30,6 +30,9 @@ class TaskItem(CTkFrame):
         self.label = CTkLabel(self, text=task.text, anchor="w", justify="left", wraplength=1200, font=self.normal_font)
         self.label.grid(row=0, column=1, sticky="ew", padx=10, pady=5)
         
+        if task.done:
+            self.label.configure(font=self.strike_font, text_color="gray70")
+        
         self.bind("<Configure>", self.on_resize)
         
         # double click to edit using bind
@@ -37,7 +40,7 @@ class TaskItem(CTkFrame):
         
         # checkbox button
         self.check_var = ctk.BooleanVar(value=task.done)
-        self.check_box = CTkCheckBox(self, text=None, command=self.checked, variable=self.check_var, onvalue="on", offvalue="off", width=24)
+        self.check_box = CTkCheckBox(self, text=None, command=self.checked, variable=self.check_var, onvalue=True, offvalue=False, width=24)
         self.check_box.grid(row=0, column=0, padx=5, pady=5)
 
         # delete button
@@ -60,7 +63,7 @@ class TaskItem(CTkFrame):
         self.label.configure(wraplength=new_width)
     
     def checked(self):
-        is_on = self.check_var.get() == "on"
+        is_on = self.check_var.get()
         
         if is_on:
             self.label.configure(font=self.strike_font, text_color="gray70")

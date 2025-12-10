@@ -18,7 +18,8 @@ from pages.tasksServices        import TaskServices
 # from pages.budgetController     import BudgetController
 # from pages.budgetServices       import BudgetService
 
-# from pages.countdownUI    import CountdownUI
+from pages.countdownUI          import CountdownUI
+from pages.countdownService     import CountdownService
 
 def show_frame(frame):
     frame.tkraise()
