@@ -1,7 +1,7 @@
 #dependencies
 import os
 import customtkinter
-from    customtkinter   import CTk, CTkInputDialog, CTkButton, CTkLabel, CTkFrame
+from    customtkinter           import CTk, CTkInputDialog, CTkButton, CTkLabel, CTkFrame
 
 #import pages
 from pages.sidebarUI            import SideBarUI
@@ -11,8 +11,6 @@ from pages.taskUI               import TaskUI
 from pages.taskController       import TaskController
 from pages.tasksServices        import TaskServices
 
-
-
 # from pages.guestlistUI          import GuestListUI
 # from pages.guestlistController  import GuestListController
 
@@ -21,8 +19,11 @@ from pages.countdownService     import CountdownService
 from pages.budgetUI             import BudgetUI
 from pages.budgetController     import BudgetController
 from pages.budgetServices       import BudgetService
-from pages.budgetModel         import BudgetItem
-# from pages.countdownUI    import CountdownUI
+from pages.budgetModel          import BudgetItem
+
+from pages.countdownService     import CountdownService
+from pages.countdownModel       import CountdownModel
+from pages.countdownUI          import CountdownUI
 
 def show_frame(frame):
     frame.tkraise()
@@ -65,12 +66,18 @@ task_menu = TaskUI(root, controller=task_controller, back_target=dashboard, titl
 budget_controller = BudgetController(BudgetService())
 budget_menu = BudgetUI(root, controller=budget_controller)
 
+countdown_service = CountdownService(CountdownModel())
+countdown_menu = CountdownUI(root)
+
+# UI -> controller -> service <- model
+
 #displaying each option
 #! need refactoring
 for frame in (dashboard,
             # guest_menu,
             task_menu,
-            # budget_menu
+            # budget_menu,
+            countdown_menu
             ):
   frame.grid(row=0, column=1, sticky="nsew")
 

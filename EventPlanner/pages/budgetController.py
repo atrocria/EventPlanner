@@ -1,6 +1,6 @@
 # pages/budgetController.py
 
-from .budgetServices import BudgetService
+from pages.budgetServices import BudgetService
 
 class BudgetController:
     def __init__(self, service: BudgetService):
@@ -13,7 +13,7 @@ class BudgetController:
         return self.service.remove_item(item_name)
 
     def get_items(self):
-        return self.service.get_items()
+        return self.service.list_items()
 
     def total(self):
-        return self.service.get_total()
+        return self.service.get_summary()

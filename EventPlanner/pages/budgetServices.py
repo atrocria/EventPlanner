@@ -1,5 +1,5 @@
 # services.py
-from budgetModel import BudgetItem
+from pages.budgetModel import BudgetItem
 
 class BudgetService:
     def __init__(self):
@@ -21,7 +21,8 @@ class BudgetService:
         total_income = sum(i.amount for i in self.items if i.type == "Income")
         total_expense = sum(i.amount for i in self.items if i.type == "Expense")
         balance = total_income - total_expense
-        return total_income, total_expense, balance
-
+        return balance
+        # total_income, total_expense
+        
     def list_items(self):
         return [repr(i) for i in self.items]

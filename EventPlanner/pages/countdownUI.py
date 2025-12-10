@@ -1,8 +1,7 @@
 import customtkinter as ctk
 from tkinter import messagebox  # can keep this for popups
-from pages.countdownModel import CountdownModel
-from pages.countdownService import CountdownService
-from EventPlanner.timerStateMachine import TimerState
+from pages.countdownController import CountdownController
+from timerStateMachine import TimerState
 
 # ===== CONFIG =====
 RADIUS = 100
@@ -13,11 +12,9 @@ WHITE = "#FFFFFF"
 BACKGROUND = "#000000"
 UPDATE_INTERVAL = 50
 
-class CountdownUI:
-    def __init__(self, root, service: CountdownService, model: CountdownModel):
+class CountdownUI(ctk.CTkFrame):
+    def __init__(self, root, controller: CountdownController):
         self.root = root
-        self.service = service
-        self.model = model
         self.root.title("Circular Countdown Timer")
         self.root.geometry("300x400")
         self.root.resizable(False, False)
