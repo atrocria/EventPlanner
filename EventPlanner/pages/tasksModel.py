@@ -6,12 +6,15 @@ class TaskModel:
         self.text = text 
         self.done = done
 
+    # task done? if so, task = !doness
     def toggle(self):
         self.done = not self.done
         
+    # whats stored for json to read
     def to_dict(self):
         return {"id": self.id, "text": self.text, "done": self.done}
     
+    # whats stored for UI to read
     @classmethod
     def from_dict(cls, data:dict):
         return cls(

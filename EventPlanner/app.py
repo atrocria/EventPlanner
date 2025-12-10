@@ -6,6 +6,7 @@ from    customtkinter   import CTk, CTkInputDialog, CTkButton, CTkLabel, CTkFram
 #import pages
 from pages.sidebarUI            import SideBarUI
 from pages.dashboardUI          import DashboardUI
+
 from pages.taskUI               import TaskUI
 from pages.taskController       import TaskController
 from pages.tasksServices        import TaskServices
@@ -13,14 +14,11 @@ from pages.tasksServices        import TaskServices
 # from pages.guestlistUI          import GuestListUI
 # from pages.guestlistController  import GuestListController
 
+# from pages.budgetUI             import BudgetUI
+# from pages.budgetController     import BudgetController
+# from pages.budgetServices       import BudgetService
 
-# from pages.budgetTracker  import BudgetTrackerUI
 # from pages.countdownUI    import CountdownUI
-
-#! remove
-guests = []
-budget_items = []
-budget_limit = 0
 
 def show_frame(frame):
     frame.tkraise()
@@ -59,14 +57,16 @@ dashboard = DashboardUI(root)
 #tasks page
 task_controller = TaskController(TaskServices())
 task_menu = TaskUI(root, controller=task_controller, back_target=dashboard, title="hello from app")
-# budget_menu = BudgetTracker(root)
+
+# budget_controller = BudgetController(BudgetService())
+# budget_menu = BudgetUI(root, controller=budget_controller)
 
 #displaying each option
 #! need refactoring
 for frame in (dashboard, 
             # guest_menu, 
             task_menu, 
-          #   budget_menu
+            # budget_menu
             ):
   frame.grid(row=0, column=1, sticky="nsew")
 
@@ -75,7 +75,7 @@ CTkLabel(dashboard, text="EVENT PLANNER", font=("Arial", 18, "bold")).pack(pady=
 CTkButton(dashboard, text="Dashboard", width=25, command=lambda: DashboardUI.pinging()).pack(pady=5)
 # CTkButton(dashboard, text="Guest Manager", width=25, command=lambda: show_frame(guest_menu)).pack(pady=5)
 CTkButton(dashboard, text="Task Checklist", width=25, command=lambda: show_frame(task_menu)).pack(pady=5)
-# CTkButton(dashboard, text="Budget Tracker", width=25, command=lambda: show_frame(BudgetTracker)).pack(pady=5)
+# CTkButton(dashboard, text="Budget Tracker", width=25, command=lambda: show_frame(budget_menu)).pack(pady=5)
 # CTkButton(dashboard, text="Countdown", width=25, command=Timer).pack(pady=5)
 CTkButton(dashboard, text="Exit", width=25, command=root.quit).pack(pady=20)
 

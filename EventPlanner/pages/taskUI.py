@@ -11,11 +11,12 @@ from pages.tasksModel import TaskModel
 #services controllers state machines
 
 class TaskItem(CTkFrame):
-    def __init__(self, parent, task: TaskModel, on_delete, on_edited):
+    def __init__(self, parent, task: TaskModel, on_delete, on_edited, on_toggled):
         super().__init__(parent, fg_color="#2a2a2a", corner_radius=6)
         self.task = task
         self.on_delete = on_delete
         self.on_edited = on_edited
+        self.on_toggled = on_toggled
         self.edit_entry = None
         self.resize_cooldown = None
         
@@ -35,8 +36,8 @@ class TaskItem(CTkFrame):
         self.label.bind("<Double-Button-1>", self.start_edit)
         
         # checkbox button
-        check_var = ctk.StringVar(value="off")
-        self.check_box = CTkCheckBox(self, text=None, command=lambda: self.checked(check_var), variable=check_var, onvalue="on", offvalue="off", width=24)
+        self.check_var = ctk.BooleanVar(value=task.done)
+        self.check_box = CTkCheckBox(self, text=None, command=self.checked, variable=self.check_var, onvalue="on", offvalue="off", width=24)
         self.check_box.grid(row=0, column=0, padx=5, pady=5)
 
         # delete button
@@ -58,12 +59,17 @@ class TaskItem(CTkFrame):
         new_width = max(self.winfo_width() - 120, 100)
         self.label.configure(wraplength=new_width)
     
-    def checked(self, check_var):
-        if check_var.get() == "on":
+    def checked(self):
+        is_on = self.check_var.get() == "on"
+        
+        if is_on:
             self.label.configure(font=self.strike_font, text_color="gray70")
         else:
             self.label.configure(font=self.normal_font, text_color="white")
-        print(check_var.get())
+        
+        self.on_toggled(self.task.id)
+            
+        print("done =", self.task.done)
     
     def start_edit(self, event=None):
         # hide the label
@@ -143,21 +149,30 @@ class TaskUI(CTkFrame):
         
         for task in self.controller.get_task():
             self.add_task_widget(task)
+            
+    def on_task_toggled(self, task_id):
+        self.controller.toggle_task(task_id)
         
-    # see self.entry.bind("<Return>", self.on_enter_post)
+    def add_task_widget(self, task: TaskModel):
+        index = len(self.framedTasks)
+        item = TaskItem(
+            self.tasks_box,
+            task,
+            on_delete=self.on_task_deletion,
+            on_edited=self.on_task_edit,
+            on_toggled=self.on_task_toggled,
+        )
+        item.grid(row=index, column=0, sticky="ew", padx=5, pady=5)
+        self.framedTasks[task.id] = item
+    
     def on_enter_post(self, event=None):
         text = self.entry.get().strip()
         if not text:
             return
         
         task = self.controller.add_task(text)
-        index = len(self.framedTasks)
-        item = TaskItem(self.tasks_box, task, on_delete=self.on_task_deletion, on_edited=self.on_task_edit)
-        
-        item.grid(row=index, column=0, sticky="ew", padx=5, pady=5)
-        self.framedTasks[task.id] = item
+        self.add_task_widget(task)
             
-        # self.tasks.append(item)
         self.entry.delete(0, "end")
         print("posted")
         
