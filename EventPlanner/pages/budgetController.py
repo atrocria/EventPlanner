@@ -1,60 +1,19 @@
-from pages.budgetServices import BudgetService
-from pages.budgetUI       import BudgetUI
+# pages/budgetController.py
 
-# controller.py
-from tkinter import messagebox, simpledialog
+from .budgetServices import BudgetService
 
 class BudgetController:
-    def __init__(self, service: BudgetService, ui:BudgetUI):
+    def __init__(self, service: BudgetService):
         self.service = service
-        self.ui = ui
 
-    def add_item(self):
-        category = self.ui.category_entry.get().strip()
-        amount_str = self.ui.amount_entry.get().strip()
-        item_type = self.ui.type_var.get()
+    def add(self, item, amount):
+        return self.service.add_item(item, amount)
 
-        if not category or not amount_str:
-            messagebox.showerror("Error", "Category and amount cannot be empty.")
-            return
+    def remove(self, item_name):
+        return self.service.remove_item(item_name)
 
-        try:
-            amount = float(amount_str)
-        except ValueError:
-            messagebox.showerror("Error", "Amount must be a number.")
-            return
+    def get_items(self):
+        return self.service.get_items()
 
-        item = self.service.add_item(category, amount, item_type)
-        messagebox.showinfo("Success", f"{item_type} added: {item}")
-        self.ui.clear_form()
-
-    def view_budget(self):
-        if not self.service.items:
-            messagebox.showinfo("Budget Tracker", "No budget items yet.")
-            return
-
-        total_income, total_expense, balance = self.service.get_summary()
-        items_str = "\n".join(self.service.list_items())
-        messagebox.showinfo(
-            "Event Budget",
-            f"Total Income: {total_income:.2f}\n"
-            f"Total Expense: {total_expense:.2f}\n"
-            f"Balance: {balance:.2f}\n\nItems:\n{items_str}"
-        )
-
-    def remove_item(self):
-        if not self.service.items:
-            messagebox.showinfo("Info", "No items to remove.")
-            return
-
-        categories = [i.category for i in self.service.items]
-        choice = simpledialog.askstring("Remove Item", f"Enter category to remove:\n{', '.join(categories)}")
-
-        if not choice:
-            return
-
-        if self.service.remove_item(choice):
-            messagebox.showinfo("Success", "Item removed!")
-            self.ui.update_summary()
-        else:
-            messagebox.showerror("Error", "Item not found!")
+    def total(self):
+        return self.service.get_total()
