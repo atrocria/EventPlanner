@@ -11,15 +11,18 @@ from pages.taskUI               import TaskUI
 from pages.taskController       import TaskController
 from pages.tasksServices        import TaskServices
 
+
+
 # from pages.guestlistUI          import GuestListUI
 # from pages.guestlistController  import GuestListController
 
-# from pages.budgetUI             import BudgetUI
-# from pages.budgetController     import BudgetController
-# from pages.budgetServices       import BudgetService
-
 from pages.countdownUI          import CountdownUI
 from pages.countdownService     import CountdownService
+from pages.budgetUI             import BudgetUI
+from pages.budgetController     import BudgetController
+from pages.budgetServices       import BudgetService
+from pages.budgetModel         import BudgetItem
+# from pages.countdownUI    import CountdownUI
 
 def show_frame(frame):
     frame.tkraise()
@@ -59,20 +62,20 @@ dashboard = DashboardUI(root)
 task_controller = TaskController(TaskServices())
 task_menu = TaskUI(root, controller=task_controller, back_target=dashboard, title="hello from app")
 
-# budget_controller = BudgetController(BudgetService())
-# budget_menu = BudgetUI(root, controller=budget_controller)
+budget_controller = BudgetController(BudgetService())
+budget_menu = BudgetUI(root, controller=budget_controller)
 
 #displaying each option
 #! need refactoring
-for frame in (dashboard, 
-            # guest_menu, 
-            task_menu, 
+for frame in (dashboard,
+            # guest_menu,
+            task_menu,
             # budget_menu
             ):
   frame.grid(row=0, column=1, sticky="nsew")
 
 CTkLabel(dashboard, text="EVENT PLANNER", font=("Arial", 18, "bold")).pack(pady=20)
-    
+
 CTkButton(dashboard, text="Dashboard", width=25, command=lambda: DashboardUI.pinging()).pack(pady=5)
 # CTkButton(dashboard, text="Guest Manager", width=25, command=lambda: show_frame(guest_menu)).pack(pady=5)
 CTkButton(dashboard, text="Task Checklist", width=25, command=lambda: show_frame(task_menu)).pack(pady=5)
