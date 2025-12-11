@@ -11,8 +11,8 @@ from pages.taskUI               import TaskUI
 from pages.taskController       import TaskController
 from pages.tasksServices        import TaskServices
 
-from pages.guestlistUI          import GuestListUI
-from pages.guestlistController  import GuestListController
+# from pages.guestlistUI          import GuestListUI
+# from pages.guestlistController  import GuestListController
 
 from pages.countdownUI          import CountdownUI
 from pages.countdownService     import CountdownService
@@ -55,9 +55,8 @@ sidebar.grid(row=0, column=0, sticky="ns")
 #dashboard page
 dashboard = DashboardUI(root)
 
-guestlist page
-guest_controller = GuestListController()
-guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
+# guest_controller = GuestListController()
+# guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
 
 #tasks page
 task_controller = TaskController(TaskServices())
@@ -66,25 +65,25 @@ task_menu = TaskUI(root, controller=task_controller, back_target=dashboard, titl
 budget_controller = BudgetController(BudgetService())
 budget_menu = BudgetUI(root, controller=budget_controller, back_target=dashboard)
 
-countdown_service = CountdownService(CountdownModel())
-countdown_menu = CountdownUI(root)
+# countdown_service = CountdownService(CountdownModel())
+# countdown_menu = CountdownUI(root)
 
 # UI -> controller -> service <- model
 
 #displaying each option
 #! need refactoring
 for frame in (dashboard,
-            guest_menu,
+            # guest_menu,
             task_menu,
             budget_menu,
-            countdown_menu
+            # countdown_menu
             ):
   frame.grid(row=0, column=1, sticky="nsew")
 
 CTkLabel(dashboard, text="EVENT PLANNER", font=("Arial", 18, "bold")).pack(pady=20)
 
 CTkButton(dashboard, text="Dashboard", width=25, command=lambda: DashboardUI.pinging()).pack(pady=5)
-CTkButton(dashboard, text="Guest Manager", width=25, command=lambda: show_frame(guest_menu)).pack(pady=5)
+# CTkButton(dashboard, text="Guest Manager", width=25, command=lambda: show_frame(guest_menu)).pack(pady=5)
 CTkButton(dashboard, text="Task Checklist", width=25, command=lambda: show_frame(task_menu)).pack(pady=5)
 CTkButton(dashboard, text="Budget Tracker", width=25, command=lambda: show_frame(budget_menu)).pack(pady=5)
 # CTkButton(dashboard, text="Countdown", width=25, command=Timer).pack(pady=5)
