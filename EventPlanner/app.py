@@ -11,9 +11,10 @@ from pages.taskUI               import TaskUI
 from pages.taskController       import TaskController
 from pages.tasksServices        import TaskServices
 
-from pages.guestlistUI          import GuestListUI
-from pages.guestlistController  import GuestListController
-from pages.guestlistServices    import GuestListServices
+from pages.guestlistUI import GuestListUI
+from pages.guestlistController import GuestListController
+from pages.guestlistService import GuestListService   # singular for consistency
+from pages.guestlistModel import GuestListModel       # model handles file path
 
 from pages.countdownUI          import CountdownUI
 from pages.countdownService     import CountdownService
@@ -56,7 +57,8 @@ sidebar.grid(row=0, column=0, sticky="ns")
 #dashboard page
 dashboard = DashboardUI(root)
 
-guest_controller = GuestListController(GuestListServices())
+guest_service = GuestListService()
+guest_controller = GuestListController(guest_service)
 guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
 
 #tasks page
