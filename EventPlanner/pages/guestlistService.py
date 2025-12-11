@@ -1,18 +1,17 @@
 import os
-
-SAVE_PATH = "C:/EventPlanner/guests.txt"
+from guestlistModel import get_save_path
 
 def save_guest(name, rsvp):
-    folder = os.path.dirname(SAVE_PATH)
-    os.makedirs(folder, exist_ok=True)
-    with open(SAVE_PATH, "a", encoding="utf-8") as f:
+    path = get_save_path()
+    with open(path, "a", encoding="utf-8") as f:
         f.write(f"Guest Name: {name} | RSVP Status: {rsvp}\n")
 
 def load_guests():
-    if not os.path.exists(SAVE_PATH):
+    path = get_save_path()
+    if not os.path.exists(path):
         return []
     guests = []
-    with open(SAVE_PATH, "r", encoding="utf-8") as f:
+    with open(path, "r", encoding="utf-8") as f:
         for line in f:
             if "Guest Name:" in line and "| RSVP Status:" in line:
                 parts = line.strip().split("|")
@@ -22,6 +21,7 @@ def load_guests():
     return guests
 
 def overwrite_guests(guests):
-    with open(SAVE_PATH, "w", encoding="utf-8") as f:
+    path = get_save_path()
+    with open(path, "w", encoding="utf-8") as f:
         for g in guests:
             f.write(f"Guest Name: {g['name']} | RSVP Status: {g['rsvp']}\n")
