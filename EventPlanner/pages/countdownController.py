@@ -1,6 +1,8 @@
 
 import customtkinter as ctk
 
+#! UI -> controller -> service <- model
+
 class CountdownController(ctk.CTkFrame):
     def __init__(self, root, model, view):
         super().__init__(root)

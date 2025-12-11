@@ -1,39 +1,28 @@
-from tkinter import messagebox, simpledialog
-from pages.guestlist import save_guest_to_file, load_guests_from_file, rewrite_file
+# guestlistController.py
+import pages.guestlistModel as model
 
-class GuestController:
-    def __init__(self):
-        self.guests = load_guests_from_file()
+class GuestListController:
+    def __init__(self, service):
+        self.service = service
+        model.guests = self.service.load_guests_from_file()
 
     def add_guest(self, name, rsvp):
-        name = name.strip()
         if not name:
-            messagebox.showerror("Error", "Guest name cannot be empty.")
-            return False
-        self.guests.append({"name": name, "rsvp": rsvp})
-        save_guest_to_file(name, rsvp)
-        messagebox.showinfo("Success", f"Guest added with RSVP: {rsvp}")
-        return True
+            return {"status": "error", "message": "Guest name cannot be empty"}
+        model.guests.append({"name": name, "rsvp": rsvp})
+        self.service.save_guest_to_file(name, rsvp)
+        return {"status": "success", "message": f"Guest added with RSVP: {rsvp}"}
 
     def view_guests(self):
-        if not self.guests:
-            messagebox.showinfo("Guest List", "No guests added yet.")
-            return
-        guest_list_str = "\n".join(f"- {g['name']} (RSVP: {g['rsvp']})" for g in self.guests)
-        messagebox.showinfo("Guest List", f"Total Guests: {len(self.guests)}\n\n{guest_list_str}")
+        if not model.guests:
+            return {"status": "empty", "message": "No guests added yet"}
+        guest_list_str = "\n".join(f"- {g['name']} (RSVP: {g['rsvp']})" for g in model.guests)
+        return {"status": "success", "message": f"Total Guests: {len(model.guests)}\n\n{guest_list_str}"}
 
-    def remove_guest(self):
-        if not self.guests:
-            messagebox.showinfo("Info", "No guests to remove.")
-            return
-        names = [g["name"] for g in self.guests]
-        choice = simpledialog.askstring("Remove Guest", f"Enter guest name to remove:\n{', '.join(names)}")
-        if not choice:
-            return
-        for g in list(self.guests):
-            if g["name"].lower() == choice.lower():
-                self.guests.remove(g)
-                rewrite_file(self.guests)
-                messagebox.showinfo("Success", "Guest removed!")
-                return
-        messagebox.showerror("Error", "Guest not found!")
+    def remove_guest(self, name):
+        for g in model.guests:
+            if g["name"].lower() == name.lower():
+                model.guests.remove(g)
+                self.service.rewrite_file(model.guests)
+                return {"status": "success", "message": "Guest removed!"}
+        return {"status": "error", "message": "Guest not found"}

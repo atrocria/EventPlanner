@@ -1,51 +1,46 @@
+# guestlistUI.py
 import customtkinter as ctk
-from pages.guestlistController import GuestController
+from tkinter import messagebox
 
-class GuestUI(ctk.CTkFrame):
-    def __init__(self, parent, back_target=None):
+class GuestListUI(ctk.CTkFrame):
+    def __init__(self, parent, controller, back_target, title="Guest Manager"):
         super().__init__(parent)
-        self.controller = GuestController()
+        self.controller = controller
         self.back_target = back_target
 
-        # Header
-        header = ctk.CTkFrame(self, fg_color="transparent")
-        header.pack(pady=(0, 15))
-        ctk.CTkLabel(header, text="GUEST LIST MANAGER", font=("Arial", 20, "bold")).pack()
-        self.count_label = ctk.CTkLabel(header, text=f"Total Guests: {len(self.controller.guests)}", font=("Arial", 14))
-        self.count_label.pack(pady=5)
+        header = ctk.CTkLabel(self, text=title, font=("Arial", 20, "bold"))
+        header.pack(pady=10)
 
-        # Form
-        form = ctk.CTkFrame(self, fg_color="transparent")
-        form.pack(pady=15)
-        ctk.CTkLabel(form, text="Guest Name:", font=("Arial", 14)).pack(anchor="w")
-        self.name_entry = ctk.CTkEntry(form, width=260, corner_radius=8)
+        self.name_entry = ctk.CTkEntry(self, width=260, corner_radius=8)
         self.name_entry.pack(pady=5)
-        ctk.CTkLabel(form, text="RSVP Status:", font=("Arial", 14)).pack(anchor="w", pady=(10, 0))
+
         self.rsvp_var = ctk.StringVar(value="Yes")
-        ctk.CTkComboBox(form, values=["Yes", "No"], variable=self.rsvp_var, width=260, corner_radius=8).pack(pady=5)
+        rsvp_dropdown = ctk.CTkComboBox(self, values=["Yes", "No"], variable=self.rsvp_var, width=260)
+        rsvp_dropdown.pack(pady=5)
 
-        # Buttons
-        btns = ctk.CTkFrame(self, fg_color="transparent")
-        btns.pack(pady=20)
-        ctk.CTkButton(btns, text="Add Guest", width=180, fg_color="#3A6EA5",
-                      hover_color="#ff8800", command=self._add).grid(row=0, column=0, padx=5, pady=5)
-        ctk.CTkButton(btns, text="View Guest List", width=180, fg_color="#3A6EA5",
-                      hover_color="#ff8800", command=self.controller.view_guests).grid(row=0, column=1, padx=5, pady=5)
-        ctk.CTkButton(btns, text="Remove Guest", width=180, fg_color="#3A6EA5",
-                      hover_color="#ff8800", command=self._remove).grid(row=1, column=0, padx=5, pady=5)
-        ctk.CTkButton(btns, text="Clear Form", width=180, fg_color="#3A6EA5",
-                      hover_color="#ff8800", command=self._clear).grid(row=1, column=1, padx=5, pady=5)
+        ctk.CTkButton(self, text="Add Guest", command=self.add_guest).pack(pady=5)
+        ctk.CTkButton(self, text="View Guests", command=self.view_guests).pack(pady=5)
+        ctk.CTkButton(self, text="Remove Guest", command=self.remove_guest).pack(pady=5)
+        ctk.CTkButton(self, text="Back", command=lambda: back_target.tkraise()).pack(pady=5)
 
-    def _add(self):
-        ok = self.controller.add_guest(self.name_entry.get(), self.rsvp_var.get())
-        if ok:
-            self._clear()
-            self.count_label.configure(text=f"Total Guests: {len(self.controller.guests)}")
+    def add_guest(self):
+        result = self.controller.add_guest(self.name_entry.get().strip(), self.rsvp_var.get())
+        if result["status"] == "error":
+            messagebox.showerror("Error", result["message"])
+        else:
+            messagebox.showinfo("Success", result["message"])
 
-    def _remove(self):
-        self.controller.remove_guest()
-        self.count_label.configure(text=f"Total Guests: {len(self.controller.guests)}")
+    def view_guests(self):
+        result = self.controller.view_guests()
+        if result["status"] == "empty":
+            messagebox.showinfo("Guest List", result["message"])
+        else:
+            messagebox.showinfo("Guest List", result["message"])
 
-    def _clear(self):
-        self.name_entry.delete(0, "end")
-        self.rsvp_var.set("Yes")
+    def remove_guest(self):
+        name = self.name_entry.get().strip()
+        result = self.controller.remove_guest(name)
+        if result["status"] == "error":
+            messagebox.showerror("Error", result["message"])
+        else:
+            messagebox.showinfo("Success", result["message"])
