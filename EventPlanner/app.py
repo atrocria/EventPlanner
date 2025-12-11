@@ -11,8 +11,8 @@ from pages.taskUI               import TaskUI
 from pages.taskController       import TaskController
 from pages.tasksServices        import TaskServices
 
-# from pages.guestlistUI          import GuestListUI
-# from pages.guestlistController  import GuestListController
+from pages.guestlistUI          import GuestListUI
+from pages.guestlistController  import GuestListController
 
 from pages.countdownUI          import CountdownUI
 from pages.countdownService     import CountdownService
