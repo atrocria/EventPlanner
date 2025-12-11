@@ -1,19 +1,15 @@
-# pages/budgetController.py
-
-from pages.budgetServices import BudgetService
-
 class BudgetController:
-    def __init__(self, service: BudgetService):
+    def __init__(self, service):
         self.service = service
 
-    def add(self, item, amount):
-        return self.service.add_item(item, amount)
+    def add_budget_item(self, name: str, amount: float):
+        return self.service.add_item(name, amount)
 
-    def remove(self, item_name):
-        return self.service.remove_item(item_name)
+    def delete_budget_item(self, index: int):
+        self.service.delete_item(index)
 
-    def get_items(self):
-        return self.service.list_items()
+    def get_all_items(self):
+        return self.service.get_items()
 
-    def total(self):
-        return self.service.get_summary()
+    def get_total_budget(self):
+        return self.service.get_total()
