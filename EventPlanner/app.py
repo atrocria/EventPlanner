@@ -12,9 +12,9 @@ from pages.taskUI               import TaskUI
 from pages.taskController       import TaskController
 from pages.tasksServices        import TaskServices
 
-from pages.guestlistUI          import GuestListUI
-from pages.guestlistController  import GuestListController
-from pages.guestlistService     import GuestListService   # singular for consistency
+# from pages.guestlistUI          import GuestListUI
+# from pages.guestlistController  import GuestListController
+# from pages.guestlistService     import GuestListService   # singular for consistency
 
 # budget manager
 from pages.budgetUI             import BudgetUI
@@ -55,16 +55,16 @@ root.columnconfigure(1, weight=1)
 #dashboard page
 dashboard = DashboardUI(root)
 
-guest_service = GuestListService()
-guest_controller = GuestListController(guest_service)
-guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
+# guest_service = GuestListService()
+# guest_controller = GuestListController(guest_service)
+# guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
 
 #tasks page
 task_controller = TaskController(TaskServices())
 budget_controller = BudgetController(BudgetService())
 
 # countdown_menu = CountdownUI(root)
-guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
+# guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
 task_menu = TaskUI(root, controller=task_controller, back_target=dashboard, title="hello from app")
 budget_menu = BudgetUI(root, controller=budget_controller, back_target=dashboard)
 
@@ -72,7 +72,7 @@ budget_menu = BudgetUI(root, controller=budget_controller, back_target=dashboard
 # for each menu option, align into column
 for frame in (
   dashboard,
-  guest_menu,
+  # guest_menu,
   task_menu,
   budget_menu,
   # countdown_menu
@@ -82,7 +82,7 @@ for frame in (
 Menu = [
   {"name": "Dashboard", "icon": os.path.join(icon_path, "dashboard.png"), "target": dashboard},
   # {"name": "countdown", "icon": os.path.join(BASE_DIR, "icons", "countdown.png"), "target": countdown_menu},
-  {"name": "Guests",    "icon": os.path.join(icon_path, "guests.png"),    "target": guest_menu},
+  # {"name": "Guests",    "icon": os.path.join(icon_path, "guests.png"),    "target": guest_menu},
   {"name": "Tasks",     "icon": os.path.join(icon_path, "tasks.png"),     "target": task_menu},
   {"name": "Budget",    "icon": os.path.join(icon_path, "budget.png"),    "target": budget_menu}
 ]
