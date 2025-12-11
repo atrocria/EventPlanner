@@ -1,28 +1,40 @@
-# guestlistController.py
-import pages.guestlistModel as model
+from tkinter import messagebox, simpledialog
+import guestlistService as service
 
-class GuestListController:
-    def __init__(self, service):
-        self.service = service
-        model.guests = self.service.load_guests_from_file()
+def add_guest(name_entry, rsvp_var, guests, update_status, clear_form):
+    name = name_entry.get().strip()
+    rsvp = rsvp_var.get()
+    if not name:
+        update_status("Error: Guest name cannot be empty.")
+        return
+    guests.append({"name": name, "rsvp": rsvp})
+    service.save_guest(name, rsvp)
+    messagebox.showinfo("Guest Added", f"Guest '{name}' added with RSVP: {rsvp}")
+    update_status(f"Guest '{name}' added with RSVP: {rsvp}")
+    clear_form()
 
-    def add_guest(self, name, rsvp):
-        if not name:
-            return {"status": "error", "message": "Guest name cannot be empty"}
-        model.guests.append({"name": name, "rsvp": rsvp})
-        self.service.save_guest_to_file(name, rsvp)
-        return {"status": "success", "message": f"Guest added with RSVP: {rsvp}"}
+def view_guests(guests, update_status):
+    if not guests:
+        update_status("No guests added yet.")
+        return
+    guest_list_str = "\n".join(f"- {g['name']} (RSVP: {g['rsvp']})" for g in guests)
+    messagebox.showinfo("Guest List", f"Total Guests: {len(guests)}\n\n{guest_list_str}")
+    update_status("Displayed guest list.")
 
-    def view_guests(self):
-        if not model.guests:
-            return {"status": "empty", "message": "No guests added yet"}
-        guest_list_str = "\n".join(f"- {g['name']} (RSVP: {g['rsvp']})" for g in model.guests)
-        return {"status": "success", "message": f"Total Guests: {len(model.guests)}\n\n{guest_list_str}"}
-
-    def remove_guest(self, name):
-        for g in model.guests:
-            if g["name"].lower() == name.lower():
-                model.guests.remove(g)
-                self.service.rewrite_file(model.guests)
-                return {"status": "success", "message": "Guest removed!"}
-        return {"status": "error", "message": "Guest not found"}
+def remove_guest(guests, guest_count_label, update_status):
+    if not guests:
+        update_status("No guests to remove.")
+        return
+    names = [g["name"] for g in guests]
+    choice = simpledialog.askstring("Remove Guest", f"Enter guest name to remove:\n{', '.join(names)}")
+    if not choice:
+        return
+    for g in guests:
+        if g["name"].lower() == choice.lower():
+            guests.remove(g)
+            service.overwrite_guests(guests)
+            guest_count_label.configure(text=f"Total Guests: {len(guests)}")
+            messagebox.showinfo("Guest Removed", f"Guest '{choice}' has been removed.")
+            update_status(f"Guest '{choice}' removed.")
+            return
+    update_status("Error: Guest not found!")
