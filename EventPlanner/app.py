@@ -12,10 +12,9 @@ from pages.taskUI               import TaskUI
 from pages.taskController       import TaskController
 from pages.tasksServices        import TaskServices
 
-# guestlist manager
 from pages.guestlistUI          import GuestListUI
 from pages.guestlistController  import GuestListController
-from pages.guestlistServices    import GuestListServices
+from pages.guestlistService     import GuestListService   # singular for consistency
 
 # budget manager
 from pages.budgetUI             import BudgetUI
@@ -56,9 +55,11 @@ root.columnconfigure(1, weight=1)
 #dashboard page
 dashboard = DashboardUI(root)
 
-# configure pages to put inside sidebarUI
-# countdown_controller = CountdownController(CountdownService())
-guest_controller = GuestListController(GuestListServices())
+guest_service = GuestListService()
+guest_controller = GuestListController(guest_service)
+guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
+
+#tasks page
 task_controller = TaskController(TaskServices())
 budget_controller = BudgetController(BudgetService())
 
@@ -68,8 +69,6 @@ task_menu = TaskUI(root, controller=task_controller, back_target=dashboard, titl
 budget_menu = BudgetUI(root, controller=budget_controller, back_target=dashboard)
 
 # UI -> controller -> service <- model
-
-#! displaying each option, put into sidebar later
 # for each menu option, align into column
 for frame in (
   dashboard,

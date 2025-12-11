@@ -1,228 +1,189 @@
-# This code launches directly into Guest List Manager.
-
 import customtkinter as ctk
 from tkinter import messagebox, simpledialog
 import os
 
 # ===========================
 # FILE SAVE PATH
-# Define the file path where guest data will be stored.
-SAVE_PATH = "C:/EventPlanner/guests.txt"
 # ===========================
+SAVE_PATH = "C:/EventPlanner/guests.txt"
 
 # ===========================
 # FILE SAVE & LOAD FUNCTIONS
 # ===========================
 def save_guest_to_file(name, rsvp):
-    """
-    Save a guest entry to the text file in a readable format.
-    Demonstrates file writing and string formatting.
-    """
     folder = os.path.dirname(SAVE_PATH)
-    os.makedirs(folder, exist_ok=True)  # Ensure folder exists
-
+    os.makedirs(folder, exist_ok=True)
     with open(SAVE_PATH, "a", encoding="utf-8") as f:
         f.write(f"Guest Name: {name} | RSVP Status: {rsvp}\n")
 
-
 def load_guests_from_file():
-    """
-    Load guest entries from the text file when the app starts.
-    Uses string processing and collections (list + dictionary).
-    """
     if not os.path.exists(SAVE_PATH):
         return []
-
     guests_list = []
     with open(SAVE_PATH, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
-            if line.startswith("Guest Name:") and "| RSVP Status:" in line:
-                # Split into parts using string operations
+            if "Guest Name:" in line and "| RSVP Status:" in line:
                 parts = line.split("|")
                 name = parts[0].replace("Guest Name:", "").strip()
                 rsvp = parts[1].replace("RSVP Status:", "").strip()
                 guests_list.append({"name": name, "rsvp": rsvp})
     return guests_list
 
-
 # ===========================
 # INITIAL APP SETTINGS
 # ===========================
-# Configure global appearance settings for the GUI.
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
-
-# Load saved guests into memory.
 guests = load_guests_from_file()
 
+# ===========================
+# STATUS BAR UPDATE FUNCTION
+# ===========================
+def update_status(message):
+    status_label.configure(text=message)
 
 # ===========================
 # GUEST FUNCTIONS
 # ===========================
 def add_guest():
-    """
-    Add a new guest to the list and save to file.
-    Includes validation, file writing, and updating collections.
-    """
     name = name_entry.get().strip()
     rsvp = rsvp_var.get()
-
     if not name:
-        messagebox.showerror("Error", "Guest name cannot be empty.")
+        update_status("Error: Guest name cannot be empty.")
         return
-
     guests.append({"name": name, "rsvp": rsvp})
-
-    # Save to text file
     save_guest_to_file(name, rsvp)
 
-    messagebox.showinfo("Success", f"Guest added with RSVP: {rsvp}")
+    # ✅ Notification popup
+    messagebox.showinfo("Guest Added", f"Guest '{name}' added with RSVP: {rsvp}")
+
+    update_status(f"Guest '{name}' added with RSVP: {rsvp}")
     clear_form()
 
-
 def view_guests():
-    """
-    Display all guests in a message box.
-    Demonstrates iteration (loop) and string formatting.
-    """
     if not guests:
-        messagebox.showinfo("Guest List", "No guests added yet.")
+        update_status("No guests added yet.")
         return
-
     guest_list_str = "\n".join(f"- {g['name']} (RSVP: {g['rsvp']})" for g in guests)
-    messagebox.showinfo("Guest List",
-                        f"Total Guests: {len(guests)}\n\n{guest_list_str}")
-
+    messagebox.showinfo("Guest List", f"Total Guests: {len(guests)}\n\n{guest_list_str}")
+    update_status("Displayed guest list.")
 
 def remove_guest():
-    """
-    Remove a guest by name and update the file.
-    Demonstrates selection (if-else), string processing, and file rewriting.
-    """
     if not guests:
-        messagebox.showinfo("Info", "No guests to remove.")
+        update_status("No guests to remove.")
         return
-
     names = [g["name"] for g in guests]
-    choice = simpledialog.askstring("Remove Guest",
-                                    f"Enter guest name to remove:\n{', '.join(names)}")
-
+    choice = simpledialog.askstring("Remove Guest", f"Enter guest name to remove:\n{', '.join(names)}")
     if not choice:
         return
-
     for g in guests:
         if g["name"].lower() == choice.lower():
             guests.remove(g)
-
-            # Rewrite file after removal (maintains consistent format)
             with open(SAVE_PATH, "w", encoding="utf-8") as f:
                 for entry in guests:
                     f.write(f"Guest Name: {entry['name']} | RSVP Status: {entry['rsvp']}\n")
-
             guest_count_label.configure(text=f"Total Guests: {len(guests)}")
-            messagebox.showinfo("Success", "Guest removed!")
+
+            # ✅ Notification popup
+            messagebox.showinfo("Guest Removed", f"Guest '{choice}' has been removed.")
+
+            update_status(f"Guest '{choice}' removed.")
             return
-
-    messagebox.showerror("Error", "Guest not found!")
-
+    update_status("Error: Guest not found!")
 
 def clear_form():
-    """
-    Reset the input fields to default values.
-    Demonstrates encapsulation and GUI state management.
-    """
     name_entry.delete(0, "end")
     rsvp_var.set("Yes")
     guest_count_label.configure(text=f"Total Guests: {len(guests)}")
-
+    update_status("Form cleared.")
+    rsvp_dropdown.focus()  # ensures focus shifts away from entry
 
 # ===========================
-# MAIN WINDOW
+# MAIN WINDOW — 1440x788
 # ===========================
-# Create the main application window and configure layout.
 root = ctk.CTk()
 root.title("Event Planner")
-root.geometry("450x600")
-
+root.geometry("1440x788")
 root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(0, weight=1)
 
-# Define only the Guest Manager frame (main menu removed).
-guest_menu = ctk.CTkFrame(root, fg_color="transparent", corner_radius=0)
+# ===========================
+# CENTERED CONTENT
+# ===========================
+guest_menu = ctk.CTkFrame(root)
 guest_menu.grid(row=0, column=0, sticky="nsew")
-
-
-# ===========================
-# GUEST MANAGER UI
-# ===========================
-# Guest Manager interface with form and buttons.
-container = ctk.CTkFrame(guest_menu, fg_color="transparent", corner_radius=0)
-container.place(relx=0.5, rely=0.5, anchor="center")
-
-header = ctk.CTkFrame(container, fg_color="transparent", corner_radius=0)
-header.pack(pady=(0, 15))
-
-ctk.CTkLabel(header, text="GUEST LIST MANAGER",
-             font=("Arial", 20, "bold")).pack()
-
-guest_count_label = ctk.CTkLabel(header,
-                                 text=f"Total Guests: {len(guests)}",
-                                 font=("Arial", 14))
-guest_count_label.pack(pady=5)
-
+container = ctk.CTkFrame(guest_menu, fg_color="transparent")
+container.place(relx=0.5, rely=0.44, anchor="center")
 
 # ===========================
-# FORM SECTION
+# HEADER
 # ===========================
-# Input form for guest name and RSVP status.
-form = ctk.CTkFrame(container, fg_color="transparent", corner_radius=0)
-form.pack(pady=15)
+header = ctk.CTkFrame(container, fg_color="transparent")
+header.pack(pady=(0, 10))
+ctk.CTkLabel(header, text="GUEST LIST MANAGER", font=("Segoe UI", 32, "bold")).pack()
+guest_count_label = ctk.CTkLabel(header, text=f"Total Guests: {len(guests)}", font=("Segoe UI", 20, "italic"))
+guest_count_label.pack(pady=(0, 2))
 
-ctk.CTkLabel(form, text="Guest Name:", font=("Arial", 14)).pack(anchor="w")
-name_entry = ctk.CTkEntry(form, width=260, corner_radius=8)
-name_entry.pack(pady=5)
+# ===========================
+# FORM CARD
+# ===========================
+form_card = ctk.CTkFrame(container, fg_color="#2a2a2a", corner_radius=12)
+form_card.pack(pady=20, padx=10, fill="x")
 
-ctk.CTkLabel(form, text="RSVP Status:", font=("Arial", 14)).pack(anchor="w", pady=(10, 0))
+ctk.CTkLabel(form_card, text="Guest Name:", font=("Segoe UI", 22)).pack(anchor="w", pady=(10, 5), padx=15)
+name_entry = ctk.CTkEntry(form_card, width=520, height=45)  # no placeholder
+name_entry.pack(pady=5, anchor="w", padx=15)
+
+ctk.CTkLabel(form_card, text="RSVP Status:", font=("Segoe UI", 22)).pack(anchor="w", pady=(15, 5), padx=15)
 rsvp_var = ctk.StringVar(value="Yes")
-rsvp_dropdown = ctk.CTkComboBox(form, values=["Yes", "No"], variable=rsvp_var,
-                                width=260, corner_radius=8)
-rsvp_dropdown.pack(pady=5)
-
+rsvp_dropdown = ctk.CTkComboBox(
+    form_card,
+    values=["Yes", "No"],
+    variable=rsvp_var,
+    width=520,
+    height=45,
+    state="readonly"   # ✅ user can select Yes/No but cannot type custom text
+)
+rsvp_dropdown.pack(pady=5, anchor="w", padx=15)
 
 # ===========================
-# BUTTONS
+# DIVIDER ABOVE BUTTONS
 # ===========================
-# Action buttons for guest management operations.
-btn_frame = ctk.CTkFrame(container, fg_color="transparent", corner_radius=0)
-btn_frame.pack(pady=20)
+ctk.CTkFrame(container, height=2, fg_color="#888").pack(fill="x", pady=(25, 0))
 
-ctk.CTkButton(btn_frame,
-              text="Add Guest", width=180,
-              fg_color="#3A6EA5",
-              hover_color="#ff8800",
-              command=add_guest) \
-    .grid(row=0, column=0, padx=5, pady=5)
+# ===========================
+# BUTTON CARD
+# ===========================
+btn_card = ctk.CTkFrame(container, fg_color="#2a2a2a", corner_radius=12)
+btn_card.pack(pady=10, padx=10)
 
-ctk.CTkButton(btn_frame,
-              text="View Guest List", width=180,
-              fg_color="#3A6EA5",
-              hover_color="#ff8800",
-              command=view_guests) \
-    .grid(row=0, column=1, padx=5, pady=5)
+button_style = {
+    "width": 260,
+    "height": 55,
+    "fg_color": "#3A6EA5",
+    "hover_color": "#ff8800",
+    "corner_radius": 12,
+    "font": ("Segoe UI", 18)
+}
 
-ctk.CTkButton(btn_frame,
-              text="Remove Guest", width=180,
-              fg_color="#3A6EA5",
-              hover_color="#ff8800",
-              command=remove_guest) \
-    .grid(row=1, column=0, padx=5, pady=5)
+ctk.CTkButton(btn_card, text="Add Guest", command=add_guest, **button_style).grid(row=0, column=0, padx=12, pady=12)
+ctk.CTkButton(btn_card, text="View Guest List", command=view_guests, **button_style).grid(row=0, column=1, padx=12, pady=12)
+ctk.CTkButton(btn_card, text="Remove Guest", command=remove_guest, **button_style).grid(row=1, column=0, padx=12, pady=12)
+ctk.CTkButton(btn_card, text="Clear Form", command=clear_form, **button_style).grid(row=1, column=1, padx=12, pady=12)
 
-ctk.CTkButton(btn_frame,
-              text="Clear Form", width=180,
-              fg_color="#3A6EA5",
-              hover_color="#ff8800",
-              command=clear_form) \
-    .grid(row=1, column=1, padx=5, pady=5)
+# ===========================
+# DIVIDER BELOW BUTTONS
+# ===========================
+ctk.CTkFrame(container, height=2, fg_color="#888").pack(fill="x", pady=(0, 10))
 
+# ===========================
+# STATUS BAR (FOOTER)
+# ===========================
+status_label = ctk.CTkLabel(root, text="Ready.", font=("Segoe UI", 16), text_color="#cccccc")
+status_label.place(relx=0.5, rely=0.98, anchor="center")
+
+# ===========================
+# START APP
+# ===========================
 root.mainloop()
