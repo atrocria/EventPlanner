@@ -11,8 +11,9 @@ from pages.taskUI               import TaskUI
 from pages.taskController       import TaskController
 from pages.tasksServices        import TaskServices
 
-# from pages.guestlistUI          import GuestListUI
-# from pages.guestlistController  import GuestListController
+from pages.guestlistUI          import GuestListUI
+from pages.guestlistController  import GuestListController
+from pages.guestlistServices    import GuestListServices
 
 from pages.countdownUI          import CountdownUI
 from pages.countdownService     import CountdownService
@@ -55,8 +56,8 @@ sidebar.grid(row=0, column=0, sticky="ns")
 #dashboard page
 dashboard = DashboardUI(root)
 
-# guest_controller = GuestListController()
-# guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
+guest_controller = GuestListController(GuestListServices())
+guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
 
 #tasks page
 task_controller = TaskController(TaskServices())
@@ -73,7 +74,7 @@ budget_menu = BudgetUI(root, controller=budget_controller, back_target=dashboard
 #displaying each option
 #! need refactoring
 for frame in (dashboard,
-            # guest_menu,
+            guest_menu,
             task_menu,
             budget_menu,
             # countdown_menu
@@ -83,7 +84,7 @@ for frame in (dashboard,
 CTkLabel(dashboard, text="EVENT PLANNER", font=("Arial", 18, "bold")).pack(pady=20)
 
 CTkButton(dashboard, text="Dashboard", width=25, command=lambda: DashboardUI.pinging()).pack(pady=5)
-# CTkButton(dashboard, text="Guest Manager", width=25, command=lambda: show_frame(guest_menu)).pack(pady=5)
+CTkButton(dashboard, text="Guest Manager", width=25, command=lambda: show_frame(guest_menu)).pack(pady=5)
 CTkButton(dashboard, text="Task Checklist", width=25, command=lambda: show_frame(task_menu)).pack(pady=5)
 CTkButton(dashboard, text="Budget Tracker", width=25, command=lambda: show_frame(budget_menu)).pack(pady=5)
 # CTkButton(dashboard, text="Countdown", width=25, command=Timer).pack(pady=5)
