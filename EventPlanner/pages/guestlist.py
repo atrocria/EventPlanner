@@ -1,11 +1,11 @@
+import os
 import customtkinter as ctk
 from tkinter import messagebox, simpledialog
-import os
 
 # ===========================
 # FILE SAVE PATH
 # ===========================
-SAVE_PATH = "C:/EventPlanner/guests.txt"
+SAVE_PATH = os.path.join(os.getcwd(), "guests.txt")
 
 # ===========================
 # FILE SAVE & LOAD FUNCTIONS
@@ -29,6 +29,11 @@ def load_guests_from_file():
                 rsvp = parts[1].replace("RSVP Status:", "").strip()
                 guests_list.append({"name": name, "rsvp": rsvp})
     return guests_list
+
+def overwrite_guests(guests):
+    with open(SAVE_PATH, "w", encoding="utf-8") as f:
+        for g in guests:
+            f.write(f"Guest Name: {g['name']} | RSVP Status: {g['rsvp']}\n")
 
 # ===========================
 # INITIAL APP SETTINGS
@@ -54,10 +59,7 @@ def add_guest():
         return
     guests.append({"name": name, "rsvp": rsvp})
     save_guest_to_file(name, rsvp)
-
-    # ✅ Notification popup
     messagebox.showinfo("Guest Added", f"Guest '{name}' added with RSVP: {rsvp}")
-
     update_status(f"Guest '{name}' added with RSVP: {rsvp}")
     clear_form()
 
@@ -80,14 +82,9 @@ def remove_guest():
     for g in guests:
         if g["name"].lower() == choice.lower():
             guests.remove(g)
-            with open(SAVE_PATH, "w", encoding="utf-8") as f:
-                for entry in guests:
-                    f.write(f"Guest Name: {entry['name']} | RSVP Status: {entry['rsvp']}\n")
+            overwrite_guests(guests)
             guest_count_label.configure(text=f"Total Guests: {len(guests)}")
-
-            # ✅ Notification popup
             messagebox.showinfo("Guest Removed", f"Guest '{choice}' has been removed.")
-
             update_status(f"Guest '{choice}' removed.")
             return
     update_status("Error: Guest not found!")
@@ -97,7 +94,7 @@ def clear_form():
     rsvp_var.set("Yes")
     guest_count_label.configure(text=f"Total Guests: {len(guests)}")
     update_status("Form cleared.")
-    rsvp_dropdown.focus()  # ensures focus shifts away from entry
+    rsvp_dropdown.focus()
 
 # ===========================
 # MAIN WINDOW — 1440x788
@@ -109,54 +106,61 @@ root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(0, weight=1)
 
 # ===========================
-# CENTERED CONTENT
+# MAIN FRAME
 # ===========================
 guest_menu = ctk.CTkFrame(root)
 guest_menu.grid(row=0, column=0, sticky="nsew")
+
+# ===========================
+# CENTERED CONTAINER
+# ===========================
 container = ctk.CTkFrame(guest_menu, fg_color="transparent")
-container.place(relx=0.5, rely=0.44, anchor="center")
+container.place(relx=0.5, rely=0.5, anchor="center")
 
 # ===========================
 # HEADER
 # ===========================
-header = ctk.CTkFrame(container, fg_color="transparent")
-header.pack(pady=(0, 10))
-ctk.CTkLabel(header, text="GUEST LIST MANAGER", font=("Segoe UI", 32, "bold")).pack()
-guest_count_label = ctk.CTkLabel(header, text=f"Total Guests: {len(guests)}", font=("Segoe UI", 20, "italic"))
-guest_count_label.pack(pady=(0, 2))
+ctk.CTkLabel(container, text="GUEST LIST MANAGER", font=("Segoe UI", 32, "bold")).pack(pady=(0, 5))
+guest_count_label = ctk.CTkLabel(container, text=f"Total Guests: {len(guests)}", font=("Segoe UI", 20, "italic"))
+guest_count_label.pack(pady=(0, 10))
 
 # ===========================
-# FORM CARD
+# FORM BLOCKS
 # ===========================
-form_card = ctk.CTkFrame(container, fg_color="#2a2a2a", corner_radius=12)
-form_card.pack(pady=20, padx=10, fill="x")
+FORM_WIDTH = 540
 
-ctk.CTkLabel(form_card, text="Guest Name:", font=("Segoe UI", 22)).pack(anchor="w", pady=(10, 5), padx=15)
-name_entry = ctk.CTkEntry(form_card, width=520, height=45)  # no placeholder
-name_entry.pack(pady=5, anchor="w", padx=15)
+# Guest Name block
+name_block = ctk.CTkFrame(container, fg_color="transparent")
+name_block.pack(pady=5)
+ctk.CTkLabel(name_block, text="Guest Name:", font=("Segoe UI", 22)).pack(anchor="w", pady=(0, 3))  # slight spacing
+name_entry = ctk.CTkEntry(
+    name_block,
+    width=FORM_WIDTH,
+    height=45,
+    placeholder_text="Enter guest name..."   # ✅ placeholder added
+)
+name_entry.pack()
 
-ctk.CTkLabel(form_card, text="RSVP Status:", font=("Segoe UI", 22)).pack(anchor="w", pady=(15, 5), padx=15)
+# RSVP Status block
+rsvp_block = ctk.CTkFrame(container, fg_color="transparent")
+rsvp_block.pack(pady=(15, 5))
+ctk.CTkLabel(rsvp_block, text="RSVP Status:", font=("Segoe UI", 22)).pack(anchor="w", pady=(0, 3))  # slight spacing
 rsvp_var = ctk.StringVar(value="Yes")
 rsvp_dropdown = ctk.CTkComboBox(
-    form_card,
+    rsvp_block,
     values=["Yes", "No"],
     variable=rsvp_var,
-    width=520,
+    width=FORM_WIDTH,
     height=45,
-    state="readonly"   # ✅ user can select Yes/No but cannot type custom text
+    state="readonly"
 )
-rsvp_dropdown.pack(pady=5, anchor="w", padx=15)
-
-# ===========================
-# DIVIDER ABOVE BUTTONS
-# ===========================
-ctk.CTkFrame(container, height=2, fg_color="#888").pack(fill="x", pady=(25, 0))
+rsvp_dropdown.pack()
 
 # ===========================
 # BUTTON CARD
 # ===========================
-btn_card = ctk.CTkFrame(container, fg_color="#2a2a2a", corner_radius=12)
-btn_card.pack(pady=10, padx=10)
+btn_card = ctk.CTkFrame(container, fg_color="transparent")
+btn_card.pack(pady=20)
 
 button_style = {
     "width": 260,
@@ -167,15 +171,10 @@ button_style = {
     "font": ("Segoe UI", 18)
 }
 
-ctk.CTkButton(btn_card, text="Add Guest", command=add_guest, **button_style).grid(row=0, column=0, padx=12, pady=12)
-ctk.CTkButton(btn_card, text="View Guest List", command=view_guests, **button_style).grid(row=0, column=1, padx=12, pady=12)
-ctk.CTkButton(btn_card, text="Remove Guest", command=remove_guest, **button_style).grid(row=1, column=0, padx=12, pady=12)
-ctk.CTkButton(btn_card, text="Clear Form", command=clear_form, **button_style).grid(row=1, column=1, padx=12, pady=12)
-
-# ===========================
-# DIVIDER BELOW BUTTONS
-# ===========================
-ctk.CTkFrame(container, height=2, fg_color="#888").pack(fill="x", pady=(0, 10))
+ctk.CTkButton(btn_card, text="ADD GUEST", command=add_guest, **button_style).grid(row=0, column=0, padx=10, pady=10)
+ctk.CTkButton(btn_card, text="VIEW GUEST LIST", command=view_guests, **button_style).grid(row=0, column=1, padx=10, pady=10)
+ctk.CTkButton(btn_card, text="REMOVE GUEST", command=remove_guest, **button_style).grid(row=1, column=0, padx=10, pady=10)
+ctk.CTkButton(btn_card, text="CLEAR FORM", command=clear_form, **button_style).grid(row=1, column=1, padx=10, pady=10)
 
 # ===========================
 # STATUS BAR (FOOTER)

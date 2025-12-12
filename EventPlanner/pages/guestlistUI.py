@@ -1,60 +1,71 @@
+# guestlistUI.py
 import customtkinter as ctk
+from guestlistController import GuestController
 
-def build_ui(root, guests):
-    root.title("Event Planner")
-    root.geometry("1440x788")
-    root.grid_rowconfigure(0, weight=1)
-    root.grid_columnconfigure(0, weight=1)
+class GuestListUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Event Planner")
+        self.root.geometry("1440x788")
 
-    guest_menu = ctk.CTkFrame(root)
-    guest_menu.grid(row=0, column=0, sticky="nsew")
-    container = ctk.CTkFrame(guest_menu, fg_color="transparent")
-    container.place(relx=0.5, rely=0.44, anchor="center")
+        container = ctk.CTkFrame(root, fg_color="transparent")
+        container.place(relx=0.5, rely=0.5, anchor="center")
 
-    header = ctk.CTkFrame(container, fg_color="transparent")
-    header.pack(pady=(0, 10))
-    ctk.CTkLabel(header, text="GUEST LIST MANAGER", font=("Segoe UI", 32, "bold")).pack()
-    guest_count_label = ctk.CTkLabel(header, text=f"Total Guests: {len(guests)}", font=("Segoe UI", 20, "italic"))
-    guest_count_label.pack(pady=(0, 2))
+        # Header
+        ctk.CTkLabel(container, text="GUEST LIST MANAGER", font=("Segoe UI", 32, "bold")).pack(pady=(0, 5))
+        self.guest_count_label = ctk.CTkLabel(container, text="Total Guests: 0", font=("Segoe UI", 20, "italic"))
+        self.guest_count_label.pack(pady=(0, 10))
 
-    form_card = ctk.CTkFrame(container, fg_color="#2a2a2a", corner_radius=12)
-    form_card.pack(pady=20, padx=10, fill="x")
+        FORM_WIDTH = 540
 
-    ctk.CTkLabel(form_card, text="Guest Name:", font=("Segoe UI", 22)).pack(anchor="w", pady=(10, 5), padx=15)
-    name_entry = ctk.CTkEntry(form_card, width=520, height=45)
-    name_entry.pack(pady=5, anchor="w", padx=15)
+        # Guest Name block
+        name_block = ctk.CTkFrame(container, fg_color="transparent")
+        name_block.pack(pady=5)
+        ctk.CTkLabel(name_block, text="Guest Name:", font=("Segoe UI", 22)).pack(anchor="w", pady=(0, 3))
+        self.name_entry = ctk.CTkEntry(name_block, width=FORM_WIDTH, height=45, placeholder_text="Enter guest name...")
+        self.name_entry.pack()
 
-    ctk.CTkLabel(form_card, text="RSVP Status:", font=("Segoe UI", 22)).pack(anchor="w", pady=(15, 5), padx=15)
-    rsvp_var = ctk.StringVar(value="Yes")
-    rsvp_dropdown = ctk.CTkComboBox(form_card, values=["Yes", "No"], variable=rsvp_var, width=520, height=45, state="readonly")
-    rsvp_dropdown.pack(pady=5, anchor="w", padx=15)
+        # RSVP Status block
+        rsvp_block = ctk.CTkFrame(container, fg_color="transparent")
+        rsvp_block.pack(pady=(15, 5))
+        ctk.CTkLabel(rsvp_block, text="RSVP Status:", font=("Segoe UI", 22)).pack(anchor="w", pady=(0, 3))
+        self.rsvp_var = ctk.StringVar(value="Yes")
+        self.rsvp_dropdown = ctk.CTkComboBox(rsvp_block, values=["Yes", "No"], variable=self.rsvp_var,
+                                             width=FORM_WIDTH, height=45, state="readonly")
+        self.rsvp_dropdown.pack()
 
-    ctk.CTkFrame(container, height=2, fg_color="#888").pack(fill="x", pady=(25, 0))
+        # Buttons
+        btn_card = ctk.CTkFrame(container, fg_color="transparent")
+        btn_card.pack(pady=20)
 
-    btn_card = ctk.CTkFrame(container, fg_color="#2a2a2a", corner_radius=12)
-    btn_card.pack(pady=10, padx=10)
+        button_style = {
+            "width": 260,
+            "height": 55,
+            "fg_color": "#3A6EA5",
+            "hover_color": "#ff8800",
+            "corner_radius": 12,
+            "font": ("Segoe UI", 18)
+        }
 
-    button_style = {
-        "width": 260,
-        "height": 55,
-        "fg_color": "#3A6EA5",
-        "hover_color": "#ff8800",
-        "corner_radius": 12,
-        "font": ("Segoe UI", 18)
-    }
+        self.controller = GuestController(self)
 
-    add_btn = ctk.CTkButton(btn_card, text="Add Guest", **button_style)
-    add_btn.grid(row=0, column=0, padx=12, pady=12)
-    view_btn = ctk.CTkButton(btn_card, text="View Guest List", **button_style)
-    view_btn.grid(row=0, column=1, padx=12, pady=12)
-    remove_btn = ctk.CTkButton(btn_card, text="Remove Guest", **button_style)
-    remove_btn.grid(row=1, column=0, padx=12, pady=12)
-    clear_btn = ctk.CTkButton(btn_card, text="Clear Form", **button_style)
-    clear_btn.grid(row=1, column=1, padx=12, pady=12)
+        ctk.CTkButton(btn_card, text="ADD GUEST", command=lambda: self.controller.add_guest(self.name_entry.get(), self.rsvp_var.get()), **button_style).grid(row=0, column=0, padx=10, pady=10)
+        ctk.CTkButton(btn_card, text="VIEW GUEST LIST", command=self.controller.view_guests, **button_style).grid(row=0, column=1, padx=10, pady=10)
+        ctk.CTkButton(btn_card, text="REMOVE GUEST", command=self.controller.remove_guest, **button_style).grid(row=1, column=0, padx=10, pady=10)
+        ctk.CTkButton(btn_card, text="CLEAR FORM", command=self.controller.clear_form, **button_style).grid(row=1, column=1, padx=10, pady=10)
 
-    ctk.CTkFrame(container, height=2, fg_color="#888").pack(fill="x", pady=(0, 10))
+        # Status bar
+        self.status_label = ctk.CTkLabel(root, text="Ready.", font=("Segoe UI", 16), text_color="#cccccc")
+        self.status_label.place(relx=0.5, rely=0.98, anchor="center")
 
-    status_label = ctk.CTkLabel(root, text="Ready.", font=("Segoe UI", 16), text_color="#cccccc")
-    status_label.place(relx=0.5, rely=0.98, anchor="center")
+    # UI helper methods
+    def update_status(self, message):
+        self.status_label.configure(text=message)
 
-    return name_entry, rsvp_var, rsvp_dropdown, guest_count_label, status_label, add_btn, view_btn, remove_btn, clear_btn
+    def refresh_guest_count(self, count):
+        self.guest_count_label.configure(text=f"Total Guests: {count}")
+
+    def clear_form(self):
+        self.name_entry.delete(0, "end")
+        self.rsvp_var.set("Yes")
+        self.rsvp_dropdown.focus()
