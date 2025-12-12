@@ -1,88 +1,108 @@
-# pages/budgetUI.py
-
-import customtkinter as ctk
+import customtkinter
 from customtkinter import CTkFrame, CTkLabel, CTkEntry, CTkButton
 
+
 class BudgetUI(CTkFrame):
-    def __init__(self, parent, controller, back_target=None):
+    def __init__(self, parent, controller, back_target):
         super().__init__(parent)
         self.controller = controller
         self.back_target = back_target
 
-        self.columnconfigure(0, weight=1)
+        # -----------------------
+        # HEADER
+        # -----------------------
+        CTkLabel(self, text="Budget Tracker", font=("Arial", 20, "bold")).pack(pady=10)
 
-        # Title
-        CTkLabel(self, text="Budget Tracker", font=("Arial", 22, "bold")).grid(
-            row=0, column=0, pady=20
-        )
+        # Back button
+        CTkButton(self, text="Back to Home", width=120,
+                  command=lambda: back_target.tkraise()).pack(pady=5)
 
-        # Scrollable List
-        self.list_frame = ctk.CTkScrollableFrame(self, fg_color="#202020")
-        self.list_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=10)
-        self.list_frame.columnconfigure(0, weight=1)
+        # -----------------------
+        # INPUT FORM
+        # -----------------------
+        form_frame = CTkFrame(self)
+        form_frame.pack(pady=10)
 
-        # Input Fields
-        self.entry_name = CTkEntry(self, placeholder_text="Item name")
-        self.entry_amount = CTkEntry(self, placeholder_text="Amount (RM)")
+        CTkLabel(form_frame, text="Item Name:").grid(row=0, column=0, padx=5, pady=5)
+        self.name_entry = CTkEntry(form_frame, width=180)
+        self.name_entry.grid(row=0, column=1, padx=5, pady=5)
 
-        self.entry_name.grid(row=2, column=0, pady=5, padx=20, sticky="ew")
-        self.entry_amount.grid(row=3, column=0, pady=5, padx=20, sticky="ew")
+        CTkLabel(form_frame, text="Amount (RM):").grid(row=1, column=0, padx=5, pady=5)
+        self.amount_entry = CTkEntry(form_frame, width=180)
+        self.amount_entry.grid(row=1, column=1, padx=5, pady=5)
 
-        # Add Button
-        self.btn_add = CTkButton(self, text="Add Item", command=self.add_item)
-        self.btn_add.grid(row=4, column=0, pady=10, padx=20, sticky="ew")
+        CTkButton(form_frame, text="Add Expense", width=150,
+                  command=self.add_item).grid(row=2, column=0, columnspan=2, pady=10)
 
-        # Back Button
-        if self.back_target:
-            CTkButton(
-                self, text="Back to Home", fg_color="#444444",
-                command=lambda: self.back_target.tkraise()
-            ).grid(row=5, column=0, pady=15, padx=20, sticky="ew")
+        # -----------------------
+        # LIST AREA
+        # -----------------------
+        self.items_frame = CTkFrame(self, corner_radius=8)
+        self.items_frame.pack(pady=10, fill="both", expand=True)
 
-        self.refresh_items()
+        # -----------------------
+        # TOTAL DISPLAY
+        # -----------------------
+        self.total_label = CTkLabel(self, text="Total: RM0", font=("Arial", 16, "bold"))
+        self.total_label.pack(pady=10)
 
-    # ------------------------------------
-    # Add New Item
-    # ------------------------------------
+        self.refresh_list()
+
+    # ----------------------------------------------------
+    # ADD ITEM
+    # ----------------------------------------------------
     def add_item(self):
-        name = self.entry_name.get().strip()
-        amount = self.entry_amount.get().strip()
+        name = self.name_entry.get().strip()
+        amount_text = self.amount_entry.get().strip()
 
-        if name == "" or amount == "":
-            return  # ignore empty input
+        if name == "" or amount_text == "":
+            return
 
-        self.controller.add_budget_item(name, float(amount))
-        self.entry_name.delete(0, "end")
-        self.entry_amount.delete(0, "end")
+        try:
+            amount = float(amount_text)
+        except ValueError:
+            return
 
-        self.refresh_items()
+        self.controller.add_item(name, amount)
 
-    # ------------------------------------
-    # Delete Item
-    # ------------------------------------
-    def delete_item(self, item_name):
-        self.controller.remove_budget_item(item_name)
-        self.refresh_items()
+        self.name_entry.delete(0, "end")
+        self.amount_entry.delete(0, "end")
 
-    # ------------------------------------
-    # Refresh UI
-    # ------------------------------------
-    def refresh_items(self):
-        for widget in self.list_frame.winfo_children():
+        self.refresh_list()
+
+    # ----------------------------------------------------
+    # DELETE ITEM
+    # ----------------------------------------------------
+    def delete_item(self, index):
+        self.controller.delete_item(index)
+        self.refresh_list()
+
+    # ----------------------------------------------------
+    # REFRESH LIST + TOTAL
+    # ----------------------------------------------------
+    def refresh_list(self):
+        # Clear old rows
+        for widget in self.items_frame.winfo_children():
             widget.destroy()
 
-        items = self.controller.get_budget_items()
+        items = self.controller.get_items()
 
-        for i, item in enumerate(items):
-            row = CTkFrame(self.list_frame, fg_color="#2A2A2A", corner_radius=8)
-            row.grid(row=i, column=0, sticky="ew", padx=10, pady=5)
+        for index, item in enumerate(items):
+            row = CTkFrame(self.items_frame)
+            row.pack(fill="x", pady=3, padx=5)
 
-            CTkLabel(row, text=f"{item.name}", anchor="w").grid(row=0, column=0, padx=10, pady=5, sticky="w")
-            CTkLabel(row, text=f"RM {item.amount:.2f}", anchor="e").grid(row=0, column=1, padx=10, pady=5, sticky="e")
+            CTkLabel(row, text=item.name, width=200, anchor="w").pack(side="left", padx=10)
+            CTkLabel(row, text=f"RM {item.amount}", width=120).pack(side="left")
 
-            # Delete Button
-            CTkButton(
-                row, text="Delete", width=70,
-                fg_color="#803434",
-                command=lambda name=item.name: self.delete_item(name)
-            ).grid(row=0, column=2, padx=10, pady=5)
+            del_btn = CTkButton(row, text="Delete", width=80,
+                                command=lambda i=index: self.delete_item(i))
+            del_btn.pack(side="right", padx=10)
+
+        self.update_total()
+
+    # ----------------------------------------------------
+    # SHOW TOTAL
+    # ----------------------------------------------------
+    def update_total(self):
+        total = self.controller.get_total()
+        self.total_label.configure(text=f"Total: RM{total}")
