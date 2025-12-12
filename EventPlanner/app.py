@@ -1,7 +1,7 @@
 # dependencies / external libraries
 import  os
 import  customtkinter
-from    customtkinter           import CTk, CTkButton, CTkLabel
+from    customtkinter           import CTk
 
 # side bar and dashboard
 from pages.sidebarUI            import SidebarUI
