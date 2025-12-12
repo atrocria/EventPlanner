@@ -14,7 +14,7 @@ from pages.tasksServices        import TaskServices
 
 # guest manager (MVC)
 from pages.guestlistUI          import GuestListUI
-from pages.guestlistController  import GuestListController
+from pages.guestlistController  import GuestController
 from pages.guestlistService     import GuestListService
 from pages.guestlistModel       import Guest
 
@@ -59,7 +59,7 @@ dashboard = DashboardUI(root)
 
 # guest manager page
 guest_service = GuestListService()
-guest_controller = GuestListController(guest_service)
+guest_controller = GuestController(guest_service)
 guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
 
 #tasks page
