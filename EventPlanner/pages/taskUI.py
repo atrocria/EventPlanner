@@ -3,15 +3,15 @@ from customtkinter import CTkFrame, CTkEntry, CTkButton, CTkLabel, CTkCheckBox, 
 from pages.taskController import TaskController
 from pages.tasksModel import TaskModel
 
-# with each enter, create a new dialog box with a checkbar on the left
-# create a new dialog box that is grayed out at the bottom of the last task
-# make a delete task button, interactable?
+#TODO: due date, send button
 
-#add task, edit task, delete task, mark tasks, #! due date
-
+# refers to the individual task
 class TaskItem(CTkFrame):
     def __init__(self, parent, task: TaskModel, on_delete, on_edited, on_toggled):
         super().__init__(parent, fg_color="#2a2a2a", corner_radius=6)
+        
+        # task element consists: id, text, done_bool.
+        # tasks can be deleted, edited, checked, and dynamically resized by changing of window size
         self.task = task
         self.on_delete = on_delete
         self.on_edited = on_edited
@@ -19,6 +19,7 @@ class TaskItem(CTkFrame):
         self.edit_entry = None
         self.resize_cooldown = None
         
+        # config for each task which goes inside tasks_box
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
         
@@ -29,12 +30,14 @@ class TaskItem(CTkFrame):
         self.label = CTkLabel(self, text=task.text, anchor="w", justify="left", wraplength=1200, font=self.normal_font)
         self.label.grid(row=0, column=1, sticky="ew", padx=10, pady=5)
         
+        # if the task is done, add strikethrough
         if task.done:
             self.label.configure(font=self.strike_font, text_color="gray70")
         
+        # when the window is being resized, change the length of the text inside the label
         self.bind("<Configure>", self.on_resize)
         
-        # double click to edit using bind
+        # double click to edit the tasks
         self.label.bind("<Double-Button-1>", self.start_edit)
         
         # checkbox button
@@ -61,6 +64,7 @@ class TaskItem(CTkFrame):
         new_width = max(self.winfo_width() - 120, 100)
         self.label.configure(wraplength=new_width)
     
+    # is the task checked?
     def checked(self):
         is_on = self.check_var.get()
         
@@ -69,9 +73,8 @@ class TaskItem(CTkFrame):
         else:
             self.label.configure(font=self.normal_font, text_color="white")
         
+        # toggle the task by communicating to the controller, see on_task_toggled
         self.on_toggled(self.task.id)
-            
-        print("done =", self.task.done)
     
     def start_edit(self, event=None):
         # hide the label
@@ -87,6 +90,8 @@ class TaskItem(CTkFrame):
 
         # finish / cancel edit scenario
         self.edit_entry.bind("<Return>", self.finish_edit)
+        self.edit_entry.bind("<FocusOut>", self.cancel_edit)
+        self.edit_entry.bind("<Escape>", self.cancel_edit)
         
     def finish_edit(self, event=None):
         if not self.edit_entry:
@@ -111,9 +116,8 @@ class TaskItem(CTkFrame):
 
         self.edit_entry.destroy()
         self.edit_entry = None
-        self.label.grid(row=0, column=0, sticky="w", padx=10, pady=5)
+        self.label.grid(row=0, column=1, sticky="ew", padx=10, pady=5)
 
-#! set limit to 10
 class TaskUI(CTkFrame):
     def __init__(self, parent, controller: TaskController, back_target, title="untitled"):
         super().__init__(parent)
@@ -136,9 +140,16 @@ class TaskUI(CTkFrame):
         self.tasks_box.grid_columnconfigure(0, weight=1)
 
         # entry for posts, pressing enter post the tasks to top
-        self.entry = CTkEntry(self, placeholder_text="psst.. add your task here")
-        self.entry.grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 10))
+        self.task_entry = CTkFrame(self, fg_color="transparent")
+        self.task_entry.grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 10))
+        self.task_entry.grid_columnconfigure(0, weight=1)
+        self.task_entry.grid_columnconfigure(1, weight=0)
+        self.entry = CTkEntry(self.task_entry, placeholder_text="psst.. add your task here")
+        self.entry.grid(row=0, column=0, sticky="ew")
         self.entry.bind("<Return>", self.on_enter_post)
+        
+        self.post_button = CTkButton(self.task_entry, text="post", command=self.on_enter_post)
+        self.post_button.grid(row=0, column=1, sticky="e")
 
         # back button (required)
         self.back_button = CTkButton(
@@ -152,9 +163,11 @@ class TaskUI(CTkFrame):
         for task in self.controller.get_task():
             self.add_task_widget(task)
             
+    # tell controller check th f up
     def on_task_toggled(self, task_id):
         self.controller.toggle_task(task_id)
         
+    # make a task, tell taskItem to deal with it, and store it in a dict
     def add_task_widget(self, task: TaskModel):
         index = len(self.framedTasks)
         item = TaskItem(

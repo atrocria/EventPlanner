@@ -19,19 +19,20 @@ class SidebarUI(CTkFrame):
 
         # frame for the icons to rearange
         self.buttons_frame = CTkFrame(self, fg_color="transparent")
-        self.buttons_frame.grid(row=1, column=0, sticky="n", padx=6, pady=6)
+        self.buttons_frame.grid(row=1, column=0, sticky="n", padx=2, pady=6)
         
         # selection state + colors, None for default
         self.selected_index = None
         self.selected_fg = ("#FF9C43", "#FF9C43")
         self.selected_hover = ("#FFB07A", "#FFB07A")
-        self.unselected_fg = None
-        self.unselected_hover = None
+        self.unselected_fg = ("#D9D9D9", "#D9D9D9")
+        self.unselected_hover = ("#FFB07A", "#FFB07A")
 
         self.buttons = []
         for idx, item in enumerate(self.menu_items):
             btn = self.create_icon_button(self.buttons_frame, item, idx)
-            btn.grid(row=idx, column=0, pady=8, padx=8, sticky="w")
+            btn.grid(row=idx, column=0, pady=8, sticky="w")
+            # btn.grid_propagate(False)
             self.buttons.append({"button":btn, "target": item.get("target")})
 
         #! bottom spacer so sidebar doesn't stretch weirdly?

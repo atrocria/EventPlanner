@@ -13,10 +13,10 @@ from pages.taskController       import TaskController
 from pages.tasksServices        import TaskServices
 
 # guest manager (MVC)
-from pages.guestlistUI          import GuestListUI
-from pages.guestlistController  import GuestController
-from pages.guestlistService     import GuestListService
-from pages.guestlistModel       import Guest
+# from pages.guestlistUI          import GuestListUI
+# from pages.guestlistController  import GuestController
+# from pages.guestlistService     import GuestListService
+# from pages.guestlistModel       import Guest
 
 # budget manager
 from pages.budgetUI             import BudgetUI
@@ -58,9 +58,9 @@ root.columnconfigure(1, weight=1)
 dashboard = DashboardUI(root)
 
 # guest manager page
-guest_service = GuestListService()
-guest_controller = GuestController(guest_service)
-guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
+# guest_service = GuestListService()
+# guest_controller = GuestController(guest_service)
+# guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard, title="Guest Manager")
 
 #tasks page
 task_controller = TaskController(TaskServices())
@@ -76,7 +76,7 @@ budget_menu = BudgetUI(root, controller=budget_controller, back_target=dashboard
 # for each menu option, align into column
 for frame in (
   dashboard,
-  guest_menu,
+  # guest_menu,
   task_menu,
   budget_menu,
   # countdown_menu
@@ -85,7 +85,7 @@ for frame in (
   
 Menu = [
   {"name": "Dashboard", "icon": os.path.join(icon_path, "dashboard.png"), "target": dashboard},
-  {"name": "Guests",    "icon": os.path.join(icon_path, "guests.png"),    "target": guest_menu},
+  # {"name": "Guests",    "icon": os.path.join(icon_path, "guests.png"),    "target": guest_menu},
   {"name": "Tasks",     "icon": os.path.join(icon_path, "tasks.png"),     "target": task_menu},
   {"name": "Budget",    "icon": os.path.join(icon_path, "budget.png"),    "target": budget_menu}
   # {"name": "Countdown", "icon": os.path.join(icon_path, "countdown.png"), "target": countdown_menu},
