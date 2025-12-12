@@ -1,8 +1,5 @@
-import os
-
-SAVE_PATH = "C:/EventPlanner/guests.txt"
-
-def get_save_path():
-    folder = os.path.dirname(SAVE_PATH)
-    os.makedirs(folder, exist_ok=True)
-    return SAVE_PATH
+# guestlistModel.py
+class Guest:
+    def __init__(self, name: str, rsvp: str):
+        self.name = name
+        self.rsvp = rsvp
