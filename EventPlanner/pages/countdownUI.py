@@ -1,149 +1,92 @@
-import customtkinter as ctk
-from tkinter import messagebox  # can keep this for popups
-from pages.countdownController import CountdownController
+from customtkinter import CTkFrame, CTkLabel, CTkEntry, CTkButton, StringVar
+from tkinter import messagebox
 from timerStateMachine import TimerState
 
+UPDATE_INTERVAL = 1000  # 1 second
 
-# ===== CONFIG =====
-RADIUS = 100
-CENTER_X = 150
-CENTER_Y = 150
-ORANGE = "#FFA500"
-WHITE = "#FFFFFF"
-BACKGROUND = "#000000"
-UPDATE_INTERVAL = 50
 
-class CountdownUI(ctk.CTkFrame):
-    def __init__(self, root, controller: CountdownController):
-        self.root = root
-        self.root.title("Circular Countdown Timer")
-        self.root.geometry("300x400")
-        self.root.resizable(False, False)
-        self.root.configure(fg_color=BACKGROUND)  # CTk background
-        self.create_input_screen()
+class CountdownUI(CTkFrame):
+    def __init__(self, parent, controller, back_target):
+        super().__init__(parent)
+        self.controller = controller
+        self.back_target = back_target
 
-    # --- Input screen ---
-    def create_input_screen(self):
-        for widget in self.root.winfo_children():
+        self.build_input_screen()
+
+    # ---------- UI BUILDERS ----------
+
+    def clear(self):
+        for widget in self.winfo_children():
             widget.destroy()
 
-        ctk.CTkLabel(self.root, text="Set Countdown", text_color=WHITE,
-                     font=("Helvetica", 16, "bold")).pack(pady=10)
+    def build_input_screen(self):
+        self.clear()
 
-        self.days_var = ctk.StringVar(value="0")
-        self.hours_var = ctk.StringVar(value="0")
-        self.minutes_var = ctk.StringVar(value="0")
-        self.seconds_var = ctk.StringVar(value="0")
+        CTkLabel(self, text="Set Countdown", font=("Segoe UI", 20, "bold")).pack(pady=10)
 
-        frame = ctk.CTkFrame(self.root, fg_color=BACKGROUND, border_width=0)
-        frame.pack(pady=10)
+        self.days = StringVar(value="0")
+        self.hours = StringVar(value="0")
+        self.minutes = StringVar(value="0")
+        self.seconds = StringVar(value="0")
 
-        ctk.CTkLabel(frame, text="Days:", text_color=WHITE).grid(row=0, column=0)
-        ctk.CTkEntry(frame, width=50, textvariable=self.days_var).grid(row=0, column=1)
+        form = CTkFrame(self)
+        form.pack(pady=10)
 
-        ctk.CTkLabel(frame, text="Hours:", text_color=WHITE).grid(row=0, column=2)
-        ctk.CTkEntry(frame, width=50, textvariable=self.hours_var).grid(row=0, column=3)
+        self._row(form, "Days", self.days, 0)
+        self._row(form, "Hours", self.hours, 1)
+        self._row(form, "Minutes", self.minutes, 2)
+        self._row(form, "Seconds", self.seconds, 3)
 
-        ctk.CTkLabel(frame, text="Minutes:", text_color=WHITE).grid(row=1, column=0)
-        ctk.CTkEntry(frame, width=50, textvariable=self.minutes_var).grid(row=1, column=1)
+        CTkButton(self, text="Start Countdown", command=self.start).pack(pady=15)
 
-        ctk.CTkLabel(frame, text="Seconds:", text_color=WHITE).grid(row=1, column=2)
-        ctk.CTkEntry(frame, width=50, textvariable=self.seconds_var).grid(row=1, column=3)
+    def _row(self, parent, label, var, row):
+        CTkLabel(parent, text=label).grid(row=row, column=0, padx=5, pady=5)
+        CTkEntry(parent, width=80, textvariable=var).grid(row=row, column=1, padx=5)
 
-        ctk.CTkButton(self.root, text="Start Countdown", command=self.start_countdown).pack(pady=20)
+    def build_timer_screen(self):
+        self.clear()
 
-    # --- Start countdown ---
-    def start_countdown(self):
+        self.time_label = CTkLabel(self, text="00:00:00", font=("Segoe UI", 32, "bold"))
+        self.time_label.pack(pady=30)
+
+        CTkButton(self, text="Reset", command=self.reset).pack(pady=10)
+
+        self.update_loop()
+
+    # ---------- ACTIONS ----------
+
+    def start(self):
         try:
-            d = int(self.days_var.get())
-            h = int(self.hours_var.get())
-            m = int(self.minutes_var.get())
-            s = int(self.seconds_var.get())
+            d = int(self.days.get())
+            h = int(self.hours.get())
+            m = int(self.minutes.get())
+            s = int(self.seconds.get())
         except ValueError:
-            messagebox.showerror("Invalid input", "Please enter valid numbers!")
+            messagebox.showerror("Invalid Input", "Enter valid numbers.")
             return
 
         if d*86400 + h*3600 + m*60 + s <= 0:
-            messagebox.showerror("Invalid input", "Countdown must be greater than 0 seconds!")
+            messagebox.showerror("Invalid Input", "Time must be greater than zero.")
             return
 
-        self.service.start(d, h, m, s)
-        self.create_countdown_screen()
+        self.controller.start(d, h, m, s)
+        self.build_timer_screen()
 
-    # --- Countdown screen ---
-    def create_countdown_screen(self):
-        for widget in self.root.winfo_children():
-            widget.destroy()
+    def reset(self):
+        self.controller.reset()
+        self.build_input_screen()
 
-        # Canvas stays tk.Canvas since CTk does not have native Canvas
-        self.canvas = ctk.CTkCanvas(self.root, width=300, height=300, bg=BACKGROUND, highlightthickness=0)
-        self.canvas.pack(pady=20)
+    def update_loop(self):
+        remaining = self.controller.tick()
 
-        self.time_text = self.canvas.create_text(CENTER_X, CENTER_Y+20, text="", fill=WHITE,
-                                                 font=("Helvetica", 16, "bold"))
-        self.date_text = self.canvas.create_text(CENTER_X, CENTER_Y-40, text="", fill=WHITE,
-                                                 font=("Helvetica", 12))
-        self.day_text = self.canvas.create_text(CENTER_X, CENTER_Y-20, text="", fill=WHITE,
-                                                font=("Helvetica", 12))
+        h = remaining // 3600
+        m = (remaining % 3600) // 60
+        s = remaining % 60
 
-        # Base white ring
-        self.canvas.create_oval(CENTER_X - RADIUS, CENTER_Y - RADIUS,
-                                CENTER_X + RADIUS, CENTER_Y + RADIUS,
-                                outline=WHITE, width=8)
+        self.time_label.configure(text=f"{h:02d}:{m:02d}:{s:02d}")
 
-        self.update_timer()
-
-    # --- Timer update ---
-    def update_timer(self):
-        self.service.tick()
-        remaining = self.model.remaining
-        total = self.model.total_seconds
-
-        # Update text
-        hours = remaining // 3600
-        minutes = (remaining % 3600) // 60
-        seconds = remaining % 60
-        self.canvas.itemconfig(self.time_text, text=f"{hours:02d}:{minutes:02d}:{seconds:02d}")
-
-        if self.model.end_time:
-            self.canvas.itemconfig(self.date_text, text=self.model.end_time.strftime("%Y-%d-%m"))
-            self.canvas.itemconfig(self.day_text, text=self.model.end_time.strftime("%A"))
-
-        # Progress arcs
-        self.canvas.delete("progress")
-
-        fraction = remaining / total if total > 0 else 0
-        angle_orange = 360 * fraction
-        angle_white = 360 - angle_orange
-
-        # White arc
-        if angle_white > 0:
-            self.canvas.create_arc(
-                CENTER_X - RADIUS, CENTER_Y - RADIUS,
-                CENTER_X + RADIUS, CENTER_Y + RADIUS,
-                start=90, extent=angle_white,
-                style="arc", outline=WHITE, width=8, tags="progress"
-            )
-
-        # Orange arc
-        if remaining > 0:
-            self.canvas.create_arc(
-                CENTER_X - RADIUS, CENTER_Y - RADIUS,
-                CENTER_X + RADIUS, CENTER_Y + RADIUS,
-                start=90 - angle_orange, extent=angle_orange,
-                style="arc", outline=ORANGE, width=8, tags="progress"
-            )
-
-        # Continue or finish
-        if self.model.state == TimerState.RUNNING:
-            self.root.after(UPDATE_INTERVAL, self.update_timer)
+        if self.controller.state == TimerState.RUNNING:
+            self.after(UPDATE_INTERVAL, self.update_loop)
         else:
-            # Fully white
-            self.canvas.delete("progress")
-            self.canvas.create_oval(
-                CENTER_X - RADIUS, CENTER_Y - RADIUS,
-                CENTER_X + RADIUS, CENTER_Y + RADIUS,
-                outline=WHITE, width=8
-            )
-            messagebox.showinfo("Time's up!", "Countdown finished!")
-            self.create_input_screen()
+            messagebox.showinfo("Done", "Countdown finished.")
+            self.build_input_screen()

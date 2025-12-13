@@ -1,6 +1,6 @@
 # dependencies / external libraries
 import  os
-import  customtkinter
+import  customtkinter           as ctk
 from    customtkinter           import CTk
 
 # side bar and dashboard
@@ -24,13 +24,14 @@ from pages.budgetController     import BudgetController
 from pages.budgetServices       import BudgetService
 
 # final countdown manager
-# from pages.countdownService     import CountdownService
-# from pages.countdownController  import CountdownController
-# from pages.countdownUI          import CountdownUI
+from pages.countdownService     import CountdownService
+from pages.countdownController  import CountdownController
+from pages.countdownUI          import CountdownUI
 
 def show_frame(frame):
     frame.tkraise()
     
+# check file for first launch, splash screen
 def is_first_launch():
   flag = os.path.join(BASE_DIR, ".first_launch")
   if not os.path.exists(flag):
@@ -39,6 +40,7 @@ def is_first_launch():
       return True
     return False
   
+# center the app on the screen
 def center_window(window, width, height, x, y):
   window.geometry(f"{width}x{height}+{x}+{y}")
 
@@ -46,7 +48,7 @@ def center_window(window, width, height, x, y):
 # Dashboard menu           
 # -------------------------
 
-#root main window setup + darkmode
+# root main window setup + darkmode
 root = CTk()
 root.title("Event Planner")
 root.update_idletasks()
@@ -63,33 +65,37 @@ center_window(root, window_width, window_height, center_x, center_y)
 # file should be at the same level as this script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-customtkinter.set_appearance_mode("Dark")
+# set to dark mode, use custom theme and set file_dir
+ctk.set_appearance_mode("Dark")
 icon_path = os.path.join(BASE_DIR, "icons")
 app_icon = os.path.join(icon_path, "app_icon.ico")
-root.iconbitmap(app_icon)
-customtkinter.set_default_color_theme(os.path.join(BASE_DIR, "theme.json"))
 
-#configure how menu should be arranged
+root.iconbitmap(app_icon)
+ctk.set_default_color_theme(os.path.join(BASE_DIR, "theme.json"))
+
+# configure how menu should be arranged
 root.rowconfigure(0, weight=1)
 root.columnconfigure(0, weight=0)
 root.columnconfigure(1, weight=1)
 
-#dashboard page
+# dashboard page
 dashboard = DashboardUI(root)
 
 # guest manager page
 guest_controller = GuestController(GuestListService())
 guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard)
 
-#tasks page
+# tasks page
 task_controller = TaskController(TaskServices())
 task_menu = TaskUI(root, controller=task_controller, back_target=dashboard)
 
-#budget page
+# budget page
 budget_controller = BudgetController(BudgetService())
 budget_menu = BudgetUI(root, controller=budget_controller, back_target=dashboard)
 
-# countdown_menu = CountdownUI(root)
+# countdown page
+countdown_controller = CountdownController(CountdownService())
+countdown_menu = CountdownUI(root, controller=countdown_controller, back_target=dashboard)
 
 # UI -> controller -> service <- model
 # for each menu option, align into column
@@ -98,16 +104,17 @@ for frame in (
   guest_menu,
   task_menu,
   budget_menu,
-  # countdown_menu
+  countdown_menu
   ):
   frame.grid(row=0, column=1, sticky="nsew")
   
+# for sidebar
 Menu = [
   {"name": "Dashboard", "icon": os.path.join(icon_path, "dashboard.png"), "target": dashboard},
-  {"name": "Guests",    "icon": os.path.join(icon_path, "guests.png"),    "target": guest_menu},
+  {"name": "Countdown", "icon": os.path.join(icon_path, "countdown.png"), "target": countdown_menu},
+  {"name": "Budget",    "icon": os.path.join(icon_path, "budget.png"),    "target": budget_menu},
   {"name": "Tasks",     "icon": os.path.join(icon_path, "tasks.png"),     "target": task_menu},
-  {"name": "Budget",    "icon": os.path.join(icon_path, "budget.png"),    "target": budget_menu}
-  # {"name": "Countdown", "icon": os.path.join(icon_path, "countdown.png"), "target": countdown_menu},
+  {"name": "Guests",    "icon": os.path.join(icon_path, "guests.png"),    "target": guest_menu}
 ]
 
 # side bar selector
@@ -118,4 +125,6 @@ sidebar.grid(row=0, column=0, sticky="ns")
 show_frame(dashboard)
 if is_first_launch():
   root.after(150, lambda: SplashUI(root))
+  
+# game start
 root.mainloop()

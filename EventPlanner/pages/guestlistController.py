@@ -1,8 +1,7 @@
-from customtkinter          import CTkFrame
 from pages.guestlistModel   import GuestListModel
 from pages.guestlistService import GuestListService
 
-class GuestController(CTkFrame):
+class GuestController():
     def __init__(self, service: GuestListService):
         self.service = service
         self.guests = self.service.load_guests()

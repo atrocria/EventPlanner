@@ -1,26 +1,17 @@
-import customtkinter as ctk
-from pages.countdownModel import CountdownModel
+class CountdownController:
+    def __init__(self, service):
+        self.service = service
 
-class CountdownController(ctk.CTkFrame):
-    def __init__(self, root, model:CountdownModel):
-        super().__init__(root)
-        self.root = root
-        self.model = model
+    @property
+    def state(self):
+        return self.service.model.state
 
-    def start_countdown(self):
-        self.model.start()
-        self.update_countdown()  # start updating UI every second
-        
-    def pause_countdown(self):
-        self.model.pause()
+    def start(self, d, h, m, s):
+        if self.service.can_start():
+            self.service.start(d, h, m, s)
 
-    def reset_countdown(self):
-        self.model.reset()
+    def reset(self):
+        self.service.reset()
 
-    def update_countdown(self):
-        remaining = self.model.tick()
-
-        # TODO: update the UI label or canvas etc with `remaining`
-
-        if remaining > 0 and self.model.is_running:
-            self.root.after(1000, self.update_countdown)
+    def tick(self):
+        return self.service.tick()
