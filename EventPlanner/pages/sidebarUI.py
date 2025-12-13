@@ -4,7 +4,7 @@ from customtkinter import CTkFrame, CTkButton, CTkLabel
 from PIL import Image, ImageTk
 
 class SidebarUI(CTkFrame):
-    def __init__(self, parent, menu_items=None, show_callback=None, title="untitled", width=100):
+    def __init__(self, parent, menu_items=None, show_callback=None, width=100):
         super().__init__(parent, width=width)
         self.parent = parent
         self.show_callback = show_callback
@@ -13,9 +13,6 @@ class SidebarUI(CTkFrame):
 
         self.grid_propagate(False)
         self.columnconfigure(0, weight=1)
-
-        self.title_label = CTkLabel(self, text=title, anchor="w")
-        self.title_label.grid(row=0, column=0, padx=12, pady=(12, 6), sticky="ew")
 
         # frame for the icons to rearange
         self.buttons_frame = CTkFrame(self, fg_color="transparent")
@@ -38,8 +35,21 @@ class SidebarUI(CTkFrame):
         #! bottom spacer so sidebar doesn't stretch weirdly?
         self.rowconfigure(99, weight=1)
         
+        CTkButton(
+            self,
+            text="ⓘ",
+            text_color="white",
+            font=("Helvetica", 15, "bold"),
+            command=self.show_info_splash,
+            fg_color="transparent"
+        ).pack(side="bottom", pady=10)
+        
         if self.buttons:
             self.select(0)
+            
+    def show_info_splash(self):
+        from pages.splashUI import SplashUI
+        SplashUI(self.parent)
         
     def create_icon_button(self, parent, item, idx):
         label = item.get("name", f"item{idx}")
@@ -108,3 +118,5 @@ class SidebarUI(CTkFrame):
         new_btn.configure(fg_color=self.selected_fg, hover_color=self.selected_hover)
         
         self.selected_index = index
+        
+        

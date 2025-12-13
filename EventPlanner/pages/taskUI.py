@@ -119,7 +119,7 @@ class TaskItem(CTkFrame):
         self.label.grid(row=0, column=1, sticky="ew", padx=10, pady=5)
 
 class TaskUI(CTkFrame):
-    def __init__(self, parent, controller: TaskController, back_target, title="untitled"):
+    def __init__(self, parent, controller: TaskController, back_target):
         super().__init__(parent)
         self.controller = controller
         self.back_target = back_target
@@ -189,7 +189,7 @@ class TaskUI(CTkFrame):
         self.add_task_widget(task)
             
         self.entry.delete(0, "end")
-        print("posted")
+        print("task posted: UI")
         
     def on_task_deletion(self, task_id):
         self.controller.delete_task(task_id)
