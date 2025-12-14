@@ -1,5 +1,6 @@
 from pages.countdownModel import CountdownModel
 from timerStateMachine import TimerState
+from datetime import datetime, timedelta
 
 class CountdownService:
     def __init__(self):
@@ -8,6 +9,13 @@ class CountdownService:
     def start(self, days, hours, minutes, seconds):
         if self.can_start():
             self.model.set_countdown(days, hours, minutes, seconds)
+
+            if self.model.total_seconds > 0:
+                self.model.end_time = datetime.now() + timedelta(seconds=self.model.total_seconds)
+                self.model.state = TimerState.RUNNING
+            else:
+                self.model.state = TimerState.FINISHED 
+                
 
     def pause(self):
         if self.can_pause():
@@ -21,7 +29,7 @@ class CountdownService:
         return self.model.remaining
 
     def can_start(self):
-        return self.model.state in (TimerState.IDLE, TimerState.PAUSED)
+        return self.model.state in (TimerState.IDLE, TimerState.PAUSED, TimerState.FINISHED)
 
     def can_pause(self):
         return self.model.state == TimerState.RUNNING
