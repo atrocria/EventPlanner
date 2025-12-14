@@ -3,10 +3,11 @@ import tkinter as tk
 from customtkinter import CTkFrame, CTkButton, CTkCanvas
 
 class SidebarUI(CTkFrame):
-    def __init__(self, parent, menu_items=None, show_callback=None, width=100):
+    def __init__(self, parent, menu_items=None, splash_callback=None, show_callback=None, width=100):
         super().__init__(parent, width=width)
         self.parent = parent
         self.configure(width=width)
+        self.splash_callback = splash_callback
         self.show_callback = show_callback
         self.menu_items = menu_items or []
         self.images = {} # keep references to image objects
@@ -43,16 +44,12 @@ class SidebarUI(CTkFrame):
             fg_color="transparent",
             font=("Helvetica", 15, "bold"),
             text_color="white",
-            command=self.show_info_splash
+            command=self.splash_callback
         )
         info_btn.grid(row=100, column=0, pady=10, sticky="w")
 
         if self.buttons:
             self.select(0)
-          
-    def show_info_splash(self):
-        from pages.splashUI import SplashUI
-        SplashUI(self.parent)
         
     def create_icon_button(self, parent, item, idx):
         # label = item.get("name", f"item{idx}")

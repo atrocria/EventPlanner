@@ -1,10 +1,8 @@
-class CountdownController:
-    def __init__(self, service):
-        self.service = service
+from pages.countdownService import CountdownService
 
-    @property
-    def state(self):
-        return self.service.model.state
+class CountdownController:
+    def __init__(self, service: CountdownService):
+        self.service = service
 
     def start(self, d, h, m, s):
         if self.service.can_start():

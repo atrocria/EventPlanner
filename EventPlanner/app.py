@@ -6,6 +6,7 @@ from    customtkinter           import CTk
 # side bar and dashboard
 from pages.sidebarUI            import SidebarUI
 from pages.dashboardUI          import DashboardUI
+from pages.dashboardController  import DashboardController
 from pages.splashUI             import SplashUI
 
 # task manager
@@ -36,9 +37,12 @@ def is_first_launch():
   flag = os.path.join(BASE_DIR, ".first_launch")
   if not os.path.exists(flag):
     with open(flag, "w") as f:
-      f.write("splash_shown")
+      f.write("first_splash_shown")
       return True
     return False
+  
+def on_splash_close():
+  root.attributes("-alpha", 1.0)
   
 # center the app on the screen
 def center_window(window, width, height, x, y):
@@ -65,8 +69,6 @@ center_window(root, window_width, window_height, center_x, center_y)
 # file should be at the same level as this script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-
-
 # set to dark mode, use custom theme and set file_dir
 ctk.set_appearance_mode("Dark")
 icon_path = os.path.join(BASE_DIR, "icons")
@@ -81,7 +83,8 @@ root.columnconfigure(0, weight=0)
 root.columnconfigure(1, weight=1)
 
 # dashboard page
-dashboard = DashboardUI(root)
+dashboard_controller = DashboardController(countdown_service=CountdownService(), budget_service=BudgetService(), tasks_service=TaskServices(), guestlist_service=GuestListService())
+dashboard = DashboardUI(root, controller=dashboard_controller)
 
 # guest manager page
 guest_controller = GuestController(GuestListService())
@@ -120,13 +123,22 @@ Menu = [
 ]
 
 # side bar selector
-sidebar = SidebarUI(root, menu_items=Menu, show_callback=show_frame)
+sidebar = SidebarUI(root, menu_items=Menu,splash_callback=lambda:show_splash(root), show_callback=show_frame)
 sidebar.grid(row=0, column=0, sticky="ns")
 
 #showing the stuff starting with dashboard
 show_frame(dashboard)
 if is_first_launch():
-  root.after(150, lambda: SplashUI(root))
+  root.after(150, lambda: show_splash(root=root))
+  
+def show_splash(root):
+    root.attributes("-alpha", 0.95)
+
+    def on_close():
+        root.attributes("-alpha", 1.0)
+
+    SplashUI(root, file_path=os.path.join(BASE_DIR, "icons", "black_hole_rose.png"), on_close=on_close)
+
 
 # game start
 root.mainloop()
