@@ -29,7 +29,7 @@ class CountdownService:
         return self.model.remaining
 
     def can_start(self):
-        return self.model.state in (TimerState.IDLE, TimerState.PAUSED)
+        return self.model.state in (TimerState.IDLE, TimerState.PAUSED, TimerState.FINISHED)
 
     def can_pause(self):
         return self.model.state == TimerState.RUNNING
