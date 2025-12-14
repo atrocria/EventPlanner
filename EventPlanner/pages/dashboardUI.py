@@ -1,5 +1,5 @@
-from customtkinter              import CTk,CTkFrame, CTkButton, CTkLabel
-from pages.dashboardController  import DashboardController
+from customtkinter          import CTkFrame, CTkLabel
+from .dashboardController   import DashboardController
 
 #display cards, communicate with each component's services for info
 class DashboardUI(CTkFrame):

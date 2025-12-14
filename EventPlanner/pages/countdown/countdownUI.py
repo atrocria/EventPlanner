@@ -1,7 +1,7 @@
-from customtkinter              import CTkFrame, CTkLabel, CTkEntry, CTkButton, StringVar
-from tkinter                    import messagebox
-from timerStateMachine          import TimerState
-from pages.countdownController  import CountdownController
+from customtkinter          import CTkFrame, CTkLabel, CTkEntry, CTkButton, StringVar
+from tkinter                import messagebox
+from .timerStateMachine     import TimerState
+from .countdownController   import CountdownController
 
 UPDATE_INTERVAL = 1000  # 1 second
 

@@ -1,5 +1,5 @@
-from pages.guestlistModel   import GuestListModel
-from pages.guestlistService import GuestListService
+from .guestlistModel   import GuestListModel
+from .guestlistService import GuestListService
 
 class GuestController():
     def __init__(self, service: GuestListService):

@@ -1,5 +1,5 @@
 import json
-from pages.tasksModel import TaskModel
+from .tasksModel import TaskModel
 
 class TaskServices():
     def __init__(self, file_path="tasks.json"):

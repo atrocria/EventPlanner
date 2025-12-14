@@ -1,7 +1,7 @@
-import customtkinter            as ctk
-from customtkinter              import CTkFrame
-from tkinter                    import messagebox, simpledialog
-from pages.guestlistController  import GuestController
+import customtkinter                as ctk
+from customtkinter                  import CTkFrame
+from tkinter                        import messagebox, simpledialog
+from .guestlistController           import GuestController
 
 class GuestListUI(CTkFrame):
     def __init__(self, parent, controller: GuestController, back_target):

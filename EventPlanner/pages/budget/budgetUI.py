@@ -1,6 +1,6 @@
 import customtkinter
-from customtkinter          import CTkFrame, CTkLabel, CTkEntry, CTkButton
-from pages.budgetController import BudgetController
+from customtkinter      import CTkFrame, CTkLabel, CTkEntry, CTkButton
+from .budgetController  import BudgetController
 
 class BudgetUI(CTkFrame):
     def __init__(self, parent, controller: BudgetController, back_target="untitled"):

@@ -1,6 +1,6 @@
 # guestlistService.py
 import os
-from pages.guestlistModel import GuestListModel
+from .guestlistModel import GuestListModel
 
 class GuestListService:
     def __init__(self, file_path="guests.txt"):

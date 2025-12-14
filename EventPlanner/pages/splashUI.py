@@ -1,5 +1,5 @@
-from customtkinter import CTkToplevel, CTkFrame, CTkLabel, CTkButton
-from tkinter import PhotoImage, Label, TclError
+from customtkinter  import CTkToplevel, CTkFrame, CTkLabel, CTkButton
+from tkinter        import PhotoImage, Label, TclError
 import os
 
 class SplashUI(CTkToplevel):

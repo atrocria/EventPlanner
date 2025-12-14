@@ -1,6 +1,6 @@
-from pages.countdownModel import CountdownModel
-from timerStateMachine import TimerState
-from datetime import datetime, timedelta
+from .countdownModel    import CountdownModel
+from .timerStateMachine import TimerState
+from datetime           import datetime, timedelta
 
 class CountdownService:
     def __init__(self):

@@ -1,33 +1,33 @@
 # dependencies / external libraries
 import  os
-import  customtkinter           as ctk
-from    customtkinter           import CTk
+import  customtkinter                     as ctk
+from    customtkinter                     import CTk
 
 # side bar and dashboard
-from pages.sidebarUI            import SidebarUI
-from pages.dashboardUI          import DashboardUI
-from pages.dashboardController  import DashboardController
-from pages.splashUI             import SplashUI
+from pages.sidebarUI                      import SidebarUI
+from pages.dashboardUI                    import DashboardUI
+from pages.dashboardController            import DashboardController
+from pages.splashUI                       import SplashUI
 
 # task manager
-from pages.taskUI               import TaskUI
-from pages.taskController       import TaskController
-from pages.tasksServices        import TaskServices
+from pages.tasks.taskUI                   import TaskUI
+from pages.tasks.taskController           import TaskController
+from pages.tasks.tasksServices            import TaskServices
 
 # guest manager (MVC)
-from pages.guestlistUI          import GuestListUI
-from pages.guestlistController  import GuestController
-from pages.guestlistService     import GuestListService
+from pages.guestlist.guestlistUI          import GuestListUI
+from pages.guestlist.guestlistController  import GuestController
+from pages.guestlist.guestlistService     import GuestListService
 
 # budget manager
-from pages.budgetUI             import BudgetUI
-from pages.budgetController     import BudgetController
-from pages.budgetServices       import BudgetService
+from pages.budget.budgetUI                import BudgetUI
+from pages.budget.budgetController        import BudgetController
+from pages.budget.budgetServices          import BudgetService
 
 # final countdown manager
-from pages.countdownService     import CountdownService
-from pages.countdownController  import CountdownController
-from pages.countdownUI          import CountdownUI
+from pages.countdown.countdownService     import CountdownService
+from pages.countdown.countdownController  import CountdownController
+from pages.countdown.countdownUI          import CountdownUI
 
 def show_frame(frame):
     frame.tkraise()
@@ -87,11 +87,11 @@ dashboard_controller = DashboardController(countdown_service=CountdownService(),
 dashboard = DashboardUI(root, controller=dashboard_controller)
 
 # guest manager page
-guest_controller = GuestController(GuestListService())
+guest_controller = GuestController(GuestListService(file_path=os.path.join(BASE_DIR, "pages", "guestlist", "guests.txt")))
 guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard)
 
 # tasks page
-task_controller = TaskController(TaskServices())
+task_controller = TaskController(TaskServices(file_path=os.path.join(BASE_DIR, "pages", "tasks", "tasks.json")))
 task_menu = TaskUI(root, controller=task_controller, back_target=dashboard)
 
 # budget page

@@ -1,4 +1,4 @@
-from pages.tasksServices import TaskServices
+from .tasksServices import TaskServices
 
 class TaskController:
     def __init__(self, service: TaskServices):

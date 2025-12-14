@@ -1,7 +1,7 @@
-import customtkinter as ctk
-from customtkinter import CTkFrame, CTkEntry, CTkButton, CTkLabel, CTkCheckBox, CTkScrollableFrame, CTkFont
-from pages.taskController import TaskController
-from pages.tasksModel import TaskModel
+import customtkinter    as ctk
+from customtkinter      import CTkFrame, CTkEntry, CTkButton, CTkLabel, CTkCheckBox, CTkScrollableFrame, CTkFont
+from .taskController    import TaskController
+from .tasksModel        import TaskModel
 
 #TODO: due date, send button
 

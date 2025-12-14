@@ -1,7 +1,7 @@
-from pages.countdownService import CountdownService
-from pages.budgetServices   import BudgetService
-from pages.tasksServices    import TaskServices
-from pages.guestlistService import GuestListService
+from pages.countdown.countdownService import CountdownService
+from pages.budget.budgetServices      import BudgetService
+from pages.tasks.tasksServices        import TaskServices
+from pages.guestlist.guestlistService import GuestListService
 
 #display cards, communicate with each component's services for info
 class DashboardController():

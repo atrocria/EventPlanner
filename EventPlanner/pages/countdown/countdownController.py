@@ -1,5 +1,5 @@
-from pages.countdownService import CountdownService
-from timerStateMachine      import TimerState
+from .countdownService  import CountdownService
+from .timerStateMachine  import TimerState
 
 class CountdownController:
     def __init__(self, service: CountdownService):

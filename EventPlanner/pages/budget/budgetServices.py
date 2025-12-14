@@ -1,6 +1,6 @@
 import json
 import os
-from pages.budgetModel import BudgetItem
+from .budgetModel import BudgetItem
 
 class BudgetService:
     def __init__(self):

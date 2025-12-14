@@ -1,5 +1,5 @@
-from datetime import datetime
-from timerStateMachine import TimerState
+from datetime           import datetime
+from .timerStateMachine import TimerState
 
 class CountdownModel:
     def __init__(self):
