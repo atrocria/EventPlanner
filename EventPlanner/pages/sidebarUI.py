@@ -1,16 +1,17 @@
 import os
-import customtkinter as ctk
-from customtkinter import CTkFrame, CTkButton, CTkLabel
-from PIL import Image, ImageTk
+import tkinter as tk
+from customtkinter import CTkFrame, CTkButton, CTkCanvas
 
 class SidebarUI(CTkFrame):
     def __init__(self, parent, menu_items=None, show_callback=None, width=100):
         super().__init__(parent, width=width)
         self.parent = parent
+        self.configure(width=width)
         self.show_callback = show_callback
         self.menu_items = menu_items or []
         self.images = {} # keep references to image objects
 
+        # keep original size for size bar
         self.grid_propagate(False)
         self.columnconfigure(0, weight=1)
 
@@ -27,62 +28,89 @@ class SidebarUI(CTkFrame):
 
         self.buttons = []
         for idx, item in enumerate(self.menu_items):
-            btn = self.create_icon_button(self.buttons_frame, item, idx)
-            btn.grid(row=idx, column=0, pady=8, sticky="w")
-            # btn.grid_propagate(False)
-            self.buttons.append({"button":btn, "target": item.get("target")})
+            canvas, circle = self.create_icon_button(self.buttons_frame, item, idx)
+            canvas.grid(row=idx, column=0, pady=8)
+            self.buttons.append({"canvas": canvas,"circle": circle, "target": item.get("target")})
 
         #! bottom spacer so sidebar doesn't stretch weirdly?
         self.rowconfigure(99, weight=1)
         
-        CTkButton(
+        info_btn = CTkButton(
             self,
             text="ⓘ",
-            text_color="white",
+            width=40,
+            height=40,
+            fg_color="transparent",
             font=("Helvetica", 15, "bold"),
-            command=self.show_info_splash,
-            fg_color="transparent"
-        ).pack(side="bottom", pady=10)
-        
+            text_color="white",
+            command=self.show_info_splash
+        )
+        info_btn.grid(row=100, column=0, pady=10, sticky="w")
+
         if self.buttons:
             self.select(0)
-            
+          
     def show_info_splash(self):
         from pages.splashUI import SplashUI
         SplashUI(self.parent)
         
     def create_icon_button(self, parent, item, idx):
-        label = item.get("name", f"item{idx}")
+        # label = item.get("name", f"item{idx}")
         icon_path = item.get("icon")
-        target = item.get("target")
+        # target = item.get("target")
 
         image_obj = None
         if icon_path and os.path.exists(icon_path):
             # put button and resize into circle button
-            img = Image.open(icon_path).convert("RGBA")
-            size = 30
-            img = img.resize((size, size), Image.LANCZOS)
-            image_obj = ImageTk.PhotoImage(img)
+            image_obj = tk.PhotoImage(file=icon_path)
             self.images[f"{icon_path}_{idx}"] = image_obj
             
         # make the circle button
-        btn_kwargs = dict(
-            master=parent,
-            text="" if image_obj else "err",
-            image=image_obj,
-            width=56,
-            height=56,
-            corner_radius=28,
-            command=(lambda i=idx: self.on_click(i))
+        canvas_button = CTkCanvas(
+            parent,
+            width=69,
+            height=69,
+            highlightthickness=0,
+            bg="#1f1f1f"
         )
-        if self.unselected_fg is not None:
-            btn_kwargs["fg_color"] = self.unselected_fg
-        if self.unselected_hover is not None:
-            btn_kwargs["hover_color"] = self.unselected_hover
+        canvas_button.grid(row=idx, column=0, pady=0)
+            
+        # circle where icon sits, acts as a button
+        circle = canvas_button.create_oval(2, 2, 67, 67, fill=self.unselected_fg[0], outline="", tags=("nav_btn",)) # tuple for better readability
+        if image_obj:
+            icon = canvas_button.create_image(34, 34, image=image_obj, tags=("nav_btn",))          # image
+        else:
+            icon = canvas_button.create_text(34, 34, text="err", fill="black", tags=("nav_btn",))  # fallback
+
+        canvas_button.tag_bind("nav_btn", "<Button-1>", lambda e, i=idx: self.on_click(i))
+        canvas_button.tag_bind(
+            "nav_btn", "<Enter>", 
+            lambda e, i=idx: self.on_nav_enter(canvas_button, circle, i)
+        )
+        canvas_button.tag_bind(
+            "nav_btn", "<Leave>", 
+            lambda e, i=idx: self.on_nav_leave(canvas_button, circle, i)
+        )
+            
+        return canvas_button, circle
         
-        btn = CTkButton(**btn_kwargs)
-        return btn
         
+    def on_nav_enter(self, canvas, circle, index):
+        # hover color only if NOT selected
+        if self.selected_index != index:
+            canvas.itemconfigure(circle, fill=self.unselected_hover[0])
+
+        # always change cursor
+        canvas.configure(cursor="crosshair")
+
+    def on_nav_leave(self, canvas, circle, index):
+        # revert only if NOT selected
+        if self.selected_index != index:
+            canvas.itemconfigure(circle, fill=self.unselected_fg[0])
+
+        # reset cursor
+        canvas.configure(cursor="")
+
     def on_click(self, index):
         # valid index check
         if index < 0 or index >= len(self.buttons):
@@ -105,18 +133,10 @@ class SidebarUI(CTkFrame):
             return
 
         if self.selected_index is not None:
-            old_btn = self.buttons[self.selected_index]["button"]
-            cfg = {}
-            if self.unselected_fg is not None:
-                cfg["fg_color"] = self.unselected_fg
-            if self.unselected_hover is not None:
-                cfg["hover_color"] = self.unselected_hover
-            if cfg:
-                old_btn.configure(**cfg)
+            old_btn = self.buttons[self.selected_index]
+            old_btn["canvas"].itemconfigure(old_btn["circle"], fill=self.unselected_fg[0])
             
-        new_btn = self.buttons[index]["button"]
-        new_btn.configure(fg_color=self.selected_fg, hover_color=self.selected_hover)
+        new_btn = self.buttons[index]
+        new_btn["canvas"].itemconfigure(new_btn["circle"], fill=self.selected_fg[0])
         
         self.selected_index = index
-        
-        

@@ -36,7 +36,7 @@ def is_first_launch():
   flag = os.path.join(BASE_DIR, ".first_launch")
   if not os.path.exists(flag):
     with open(flag, "w") as f:
-      f.write("shown")
+      f.write("splash_shown")
       return True
     return False
   
@@ -64,6 +64,8 @@ center_window(root, window_width, window_height, center_x, center_y)
 
 # file should be at the same level as this script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
 
 # set to dark mode, use custom theme and set file_dir
 ctk.set_appearance_mode("Dark")
@@ -125,6 +127,6 @@ sidebar.grid(row=0, column=0, sticky="ns")
 show_frame(dashboard)
 if is_first_launch():
   root.after(150, lambda: SplashUI(root))
-  
+
 # game start
 root.mainloop()
