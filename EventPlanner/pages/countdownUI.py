@@ -1,12 +1,12 @@
-from customtkinter import CTkFrame, CTkLabel, CTkEntry, CTkButton, StringVar
-from tkinter import messagebox
-from timerStateMachine import TimerState
+from customtkinter              import CTkFrame, CTkLabel, CTkEntry, CTkButton, StringVar
+from tkinter                    import messagebox
+from timerStateMachine          import TimerState
+from pages.countdownController  import CountdownController
 
 UPDATE_INTERVAL = 1000  # 1 second
 
-
 class CountdownUI(CTkFrame):
-    def __init__(self, parent, controller, back_target):
+    def __init__(self, parent, controller: CountdownController, back_target):
         super().__init__(parent)
         self.controller = controller
         self.back_target = back_target
@@ -77,6 +77,9 @@ class CountdownUI(CTkFrame):
         self.build_input_screen()
 
     def update_loop(self):
+        if not hasattr(self, "time_label") or not self.time_label.winfo_exists():
+            return
+
         remaining = self.controller.tick()
 
         h = remaining // 3600
@@ -87,6 +90,6 @@ class CountdownUI(CTkFrame):
 
         if self.controller.state == TimerState.RUNNING:
             self.after(UPDATE_INTERVAL, self.update_loop)
-        else:
+        elif self.controller.state == TimerState.FINISHED:
             messagebox.showinfo("Done", "Countdown finished.")
             self.build_input_screen()
