@@ -51,13 +51,13 @@ class SplashUI(CTkToplevel):
             content,
             text="Welcome to Event Planner",
             font=("Segoe UI", 22, "bold")
-        ).pack(pady=(0, 12))
+        ).pack(pady=(30, 0))
 
         CTkButton(
             content,
             text="Let's go!",
             command=self.close
-        ).pack(pady=30)
+        ).pack(pady=(25, 0))
         
         support_label = CTkLabel(
             content,
@@ -66,7 +66,7 @@ class SplashUI(CTkToplevel):
             font=("Segoe UI", 12, "underline"),
             cursor="hand2"
         )
-        support_label.pack(pady=(4, 0))
+        support_label.pack(side="bottom", pady=(4, 0))
 
         support_label.bind("<Button-1>", lambda e: self.support_links())
         
@@ -80,9 +80,11 @@ class SplashUI(CTkToplevel):
         support_label.bind("<Leave>", on_leave)
 
         # ---------- SAFETY ----------
-        self.transient(parent)
-        self.grab_set()
         self.overrideredirect(True)
+        self.attributes("-topmost", True)
+        self.after(100, lambda: self.focus_force())
+        self.after(100, lambda: self.attributes("-topmost", False))
+        self.grab_set()
 
         # emergency escape
         self.bind("<Escape>", lambda e: self.close())

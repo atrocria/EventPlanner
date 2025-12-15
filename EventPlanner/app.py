@@ -14,7 +14,7 @@ from pages.tasks.taskUI                   import TaskUI
 from pages.tasks.taskController           import TaskController
 from pages.tasks.tasksServices            import TaskServices
 
-# guest manager (MVC)
+# guest manager
 from pages.guestlist.guestlistUI          import GuestListUI
 from pages.guestlist.guestlistController  import GuestController
 from pages.guestlist.guestlistService     import GuestListService
@@ -126,7 +126,7 @@ Menu = [
 sidebar = SidebarUI(root, menu_items=Menu,splash_callback=lambda:show_splash(root), show_callback=show_frame)
 sidebar.grid(row=0, column=0, sticky="ns")
 
-#showing the stuff starting with dashboard
+# show dashboard first
 show_frame(dashboard)
 if is_first_launch():
   root.after(150, lambda: show_splash(root=root))
