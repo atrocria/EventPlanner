@@ -3,29 +3,56 @@ from customtkinter                  import CTkFrame
 from tkinter                        import messagebox, simpledialog
 from .guestlistController           import GuestController
 
-class GuestListUI(CTkFrame):
-    def __init__(self, parent, controller: GuestController, back_target):
-        super().__init__(parent)
+import customtkinter                as ctk
+from customtkinter                  import CTkFrame
+from tkinter                        import messagebox, simpledialog
+from .guestlistController           import GuestController
 
+class GuestListUI(CTkFrame):
+    def __init__(self, parent, controller: GuestController, back_target, splash_key="guestlist"):
+        super().__init__(parent)
+        self.parent = parent
         self.controller = controller
         self.back_target = back_target
+        self.splash_key = splash_key
 
-        self.place(relx=0.5, rely=0.5, anchor="center")
+        # ---- layout: use grid inside this frame ----
+        # configure columns so the form sits centered in column 1
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=0)
+        self.grid_columnconfigure(2, weight=1)
 
-        # Header
-        ctk.CTkLabel(self, text="GUEST LIST MANAGER", font=("Segoe UI", 32, "bold")).pack(pady=(0, 5))
+        # HEADER (left title, right info button)
+        header = ctk.CTkFrame(self, fg_color="transparent")
+        header.grid(row=0, column=0, columnspan=3, sticky="ew", padx=20, pady=(10, 8))
+        header.grid_columnconfigure(0, weight=1)
+        header.grid_columnconfigure(1, weight=0)
+
+        ctk.CTkLabel(header, text="GUEST LIST MANAGER", font=("Segoe UI", 32, "bold")) \
+            .grid(row=0, column=0, sticky="w")
+
+        ctk.CTkButton(
+            header,
+            text="ⓘ",
+            width=30,
+            command=lambda: self.winfo_toplevel().show_page_splash(self.splash_key)
+        ).grid(row=0, column=1, sticky="e", padx=(10,0))
+
+        # guest count under header (centered across the frame)
         self.guest_count_label = ctk.CTkLabel(self, text="Total Guests: 0", font=("Segoe UI", 20, "italic"))
-        self.guest_count_label.pack(pady=(0, 10))
+        self.guest_count_label.grid(row=1, column=0, columnspan=3, pady=(0, 12))
 
         FORM_WIDTH = 540
 
-        # Guest Name
-        ctk.CTkLabel(self, text="Guest Name:", font=("Segoe UI", 22)).pack(anchor="w")
+        # Guest Name label + entry (put in center column)
+        ctk.CTkLabel(self, text="Guest Name:", font=("Segoe UI", 22)) \
+            .grid(row=2, column=1, sticky="w", padx=(0,10))
         self.name_entry = ctk.CTkEntry(self, width=FORM_WIDTH, height=45)
-        self.name_entry.pack(pady=(0, 10))
+        self.name_entry.grid(row=3, column=1, pady=(6, 12))
 
-        # RSVP
-        ctk.CTkLabel(self, text="RSVP Status:", font=("Segoe UI", 22)).pack(anchor="w")
+        # RSVP label + combo
+        ctk.CTkLabel(self, text="RSVP Status:", font=("Segoe UI", 22)) \
+            .grid(row=4, column=1, sticky="w", padx=(0,10))
         self.rsvp_var = ctk.StringVar(value="Yes")
         self.rsvp_dropdown = ctk.CTkComboBox(
             self,
@@ -35,24 +62,30 @@ class GuestListUI(CTkFrame):
             height=45,
             state="readonly"
         )
-        self.rsvp_dropdown.pack(pady=(0, 20))
+        self.rsvp_dropdown.grid(row=5, column=1, pady=(6, 18))
 
-        # Buttons
+        # Buttons container (keeps button grid grouped)
         btns = ctk.CTkFrame(self, fg_color="transparent")
-        btns.pack()
+        btns.grid(row=6, column=1)
 
-        ctk.CTkButton(btns, text="ADD GUEST", command=self.add_guest).grid(row=0, column=0, padx=10)
-        ctk.CTkButton(btns, text="VIEW GUEST LIST", command=self.show_guests).grid(row=0, column=1, padx=10)
-        ctk.CTkButton(btns, text="REMOVE GUEST", command=self.remove_guest).grid(row=1, column=0, padx=10, pady=10)
-        ctk.CTkButton(btns, text="CLEAR FORM", command=self.clear_form).grid(row=1, column=1, padx=10, pady=10)
+        # Use self.* methods (not controller.*) for view/remove/add/clear
+        ctk.CTkButton(btns, text="ADD GUEST", command=self.add_guest) \
+            .grid(row=0, column=0, padx=10, pady=4)
+        ctk.CTkButton(btns, text="VIEW GUEST LIST", command=self.show_guests) \
+            .grid(row=0, column=1, padx=10, pady=4)
+        ctk.CTkButton(btns, text="REMOVE GUEST", command=self.remove_guest) \
+            .grid(row=1, column=0, padx=10, pady=6)
+        ctk.CTkButton(btns, text="CLEAR FORM", command=self.clear_form) \
+            .grid(row=1, column=1, padx=10, pady=6)
 
+        # status label — kept as you had it (attached to parent with place)
         self.status_label = ctk.CTkLabel(parent, text="Ready.", font=("Segoe UI", 16))
         self.status_label.place(relx=0.5, rely=0.98, anchor="center")
 
+        # initialize count
         self.refresh_guest_count(0)
 
     # ---------- UI Actions ----------
-
     def add_guest(self):
         try:
             guest, count = self.controller.add_guest(
@@ -68,7 +101,9 @@ class GuestListUI(CTkFrame):
             self.update_status(str(e))
 
     def show_guests(self):
-        guests = self.controller.get_guest()
+        # use the controller method that returns the list of guests
+        # original code had get_guest vs get_guests; prefer get_guests for consistency
+        guests = self.controller.get_guests() if hasattr(self.controller, "get_guests") else self.controller.get_guest()
         if not guests:
             self.update_status("No guests added yet.")
             return
@@ -77,7 +112,7 @@ class GuestListUI(CTkFrame):
         messagebox.showinfo("Guest List", f"Total Guests: {len(guests)}\n\n{text}")
 
     def remove_guest(self):
-        guests = self.controller.get_guest()
+        guests = self.controller.get_guests() if hasattr(self.controller, "get_guests") else self.controller.get_guest()
         if not guests:
             self.update_status("No guests to remove.")
             return
@@ -92,7 +127,6 @@ class GuestListUI(CTkFrame):
             messagebox.showinfo("Guest Removed", f"{guest.name} removed.")
             self.refresh_guest_count(count)
             self.update_status("Guest removed.")
-
         except Exception as e:
             self.update_status(str(e))
 
@@ -102,10 +136,11 @@ class GuestListUI(CTkFrame):
         self.name_entry.focus()
 
     # ---------- Helpers ----------
-
     def refresh_guest_count(self, count=None):
         if count is None:
-            count = len(self.controller.get_guests())
+            # prefer get_guests, fallback to get_guest if that's what controller exposes
+            guests = self.controller.get_guests() if hasattr(self.controller, "get_guests") else self.controller.get_guest()
+            count = len(guests)
         self.guest_count_label.configure(text=f"Total Guests: {count}")
 
     def update_status(self, message):

@@ -1,13 +1,14 @@
 # dependencies / external libraries
-import  os
-import  customtkinter                     as ctk
-from    customtkinter                     import CTk
+import os
+import json
+import customtkinter                      as ctk
+from customtkinter                        import CTk
 
 # side bar and dashboard
 from pages.sidebarUI                      import SidebarUI
 from pages.dashboardUI                    import DashboardUI
 from pages.dashboardController            import DashboardController
-from pages.splashUI                       import SplashUI
+from pages.splash                         import SplashUI, SplashState
 
 # task manager
 from pages.tasks.taskUI                   import TaskUI
@@ -29,15 +30,26 @@ from pages.countdown.countdownService     import CountdownService
 from pages.countdown.countdownController  import CountdownController
 from pages.countdown.countdownUI          import CountdownUI
 
-def show_frame(frame):
+def show_frame(frame, splash_key=None):
     frame.tkraise()
-    
+
+    if splash_key and splash_key in SPLASHES:
+      if not splash_state.has_seen(splash_key):
+        cfg = SPLASHES[splash_key]
+        SplashUI(
+          root, 
+          title=cfg["title"], 
+          message=cfg["message"], 
+          image_path=os.path.join(BASE_DIR, cfg.get("image", "")), 
+          on_close=lambda: splash_state.mark_seen(splash_key)
+        )
+        
 # check file for first launch, splash screen
 def is_first_launch():
   flag = os.path.join(BASE_DIR, ".first_launch")
   if not os.path.exists(flag):
     with open(flag, "w") as f:
-      f.write("first_splash_shown")
+      f.write("first_splash_shown\n")
       return True
     return False
   
@@ -76,6 +88,23 @@ app_icon = os.path.join(icon_path, "app_icon.ico")
 
 root.iconbitmap(app_icon)
 ctk.set_default_color_theme(os.path.join(BASE_DIR, "theme.json"))
+with open(os.path.join(BASE_DIR, "pages", "splash", "splashes.json"), "r") as f:
+  SPLASHES = json.load(f)
+  
+def show_page_splash(splash_key):
+  if splash_key not in SPLASHES:
+    return
+  
+  cfg = SPLASHES[splash_key]
+  SplashUI(
+    root,
+    title=cfg["title"],
+    message=cfg["message"],
+    image_path=os.path.join(BASE_DIR, cfg.get("image", "")),
+    on_close=None
+  )
+root.show_page_splash = show_page_splash
+splash_state = SplashState(BASE_DIR)
 
 # configure how menu should be arranged
 root.rowconfigure(0, weight=1)
@@ -84,29 +113,29 @@ root.columnconfigure(1, weight=1)
 
 # dashboard page
 dashboard_controller = DashboardController(countdown_service=CountdownService(), budget_service=BudgetService(), tasks_service=TaskServices(), guestlist_service=GuestListService())
-dashboard = DashboardUI(root, controller=dashboard_controller)
-
-# guest manager page
-guest_controller = GuestController(GuestListService(file_path=os.path.join(BASE_DIR, "pages", "guestlist", "guests.txt")))
-guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard)
-
-# tasks page
-task_controller = TaskController(TaskServices(file_path=os.path.join(BASE_DIR, "pages", "tasks", "tasks.json")))
-task_menu = TaskUI(root, controller=task_controller, back_target=dashboard)
-
-# budget page
-budget_controller = BudgetController(BudgetService())
-budget_menu = BudgetUI(root, controller=budget_controller, back_target=dashboard)
+dashboard = DashboardUI(root, controller=dashboard_controller, splash_key="dashboard")
 
 # countdown page
 countdown_controller = CountdownController(CountdownService())
-countdown_menu = CountdownUI(root, controller=countdown_controller, back_target=dashboard)
+countdown_menu = CountdownUI(root, controller=countdown_controller, back_target=dashboard, splash_key="countdown")
+
+# tasks page
+task_controller = TaskController(TaskServices(file_path=os.path.join(BASE_DIR, "pages", "tasks", "tasks.json")))
+task_menu = TaskUI(root, controller=task_controller, back_target=dashboard, splash_key="tasks")
+
+# budget page
+budget_controller = BudgetController(BudgetService())
+budget_menu = BudgetUI(root, controller=budget_controller, back_target=dashboard, splash_key="budget")
+
+# guest manager page
+guestlist_controller = GuestController(GuestListService(file_path=os.path.join(BASE_DIR, "pages", "guestlist", "guests.txt")))
+guestlist_menu = GuestListUI(root, controller=guestlist_controller, back_target=dashboard, splash_key="guestlist")
 
 # UI -> controller -> service <- model
 # for each menu option, align into column
 for frame in (
   dashboard,
-  guest_menu,
+  guestlist_menu,
   task_menu,
   budget_menu,
   countdown_menu
@@ -117,28 +146,27 @@ for frame in (
 Menu = [
   {"name": "Dashboard", "icon": os.path.join(icon_path, "dashboard.png"), "target": dashboard},
   {"name": "Countdown", "icon": os.path.join(icon_path, "countdown.png"), "target": countdown_menu},
-  {"name": "Budget",    "icon": os.path.join(icon_path, "budget.png"),    "target": budget_menu},
   {"name": "Tasks",     "icon": os.path.join(icon_path, "tasks.png"),     "target": task_menu},
-  {"name": "Guests",    "icon": os.path.join(icon_path, "guests.png"),    "target": guest_menu}
+  {"name": "Budget",    "icon": os.path.join(icon_path, "budget.png"),    "target": budget_menu},
+  {"name": "Guests",    "icon": os.path.join(icon_path, "guests.png"),    "target": guestlist_menu}
 ]
 
 # side bar selector
-sidebar = SidebarUI(root, menu_items=Menu,splash_callback=lambda:show_splash(root), show_callback=show_frame)
+sidebar = SidebarUI(root, menu_items=Menu, splash_callback=lambda:show_app_splash(root), show_callback=show_frame)
 sidebar.grid(row=0, column=0, sticky="ns")
 
 # show dashboard first
 show_frame(dashboard)
 if is_first_launch():
-  root.after(150, lambda: show_splash(root=root))
+  root.after(150, lambda: show_app_splash(root=root))
   
-def show_splash(root):
+def show_app_splash(root):
     root.attributes("-alpha", 0.95)
 
     def on_close():
         root.attributes("-alpha", 1.0)
 
-    SplashUI(root, file_path=os.path.join(BASE_DIR, "icons", "black_hole_rose.png"), on_close=on_close)
-
+    SplashUI(root, title="Welcome", message="Plan events without losing your mind.", image_path=os.path.join(BASE_DIR, "icons", "black_hole_rose.png"), on_close=on_close)
 
 # game start
 root.mainloop()

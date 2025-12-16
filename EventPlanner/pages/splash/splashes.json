@@ -1,0 +1,27 @@
+{
+  "app": {
+    "title": "Welcome",
+    "message": "This app helps you plan events without losing your mind.",
+    "image": "icons/black_hole_rose.png"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "message": "Your overview. Everything important lives here."
+  },
+  "tasks": {
+    "title": "Tasks",
+    "message": "Track what needs to be done before disaster strikes."
+  },
+  "budget": {
+    "title": "Budget",
+    "message": "Money goes in. Panic goes out."
+  },
+  "countdown": {
+    "title": "Countdown",
+    "message": "Time waits for no one. Especially not you."
+  },
+  "guestlist": {
+    "title": "Guests",
+    "message": "People. Lots of them. Keep track."
+  }
+}

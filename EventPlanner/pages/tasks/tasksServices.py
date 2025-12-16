@@ -17,6 +17,11 @@ class TaskServices():
         self.tasks = [t for t in self.tasks if t.id != task_id]
         self.save()
 
+    def delete_by_ids(self, task_ids: list[str]):
+        ids = set(task_ids)
+        self.tasks = [t for t in self.tasks if t.id not in ids]
+        self.save()
+
     def toggle_by_id(self, task_id: str):
         for t in self.tasks:
             if t.id == task_id:
@@ -30,6 +35,12 @@ class TaskServices():
                 t.text = new_text
                 break
         self.save()
+        
+    def get_by_id(self, task_id):
+        for task in self.tasks:
+            if task.id == task_id:
+                return task
+        return None
             
     def all(self):
         return list(self.tasks)

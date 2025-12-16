@@ -1,11 +1,13 @@
-from customtkinter          import CTkFrame, CTkLabel
+from customtkinter          import CTkFrame, CTkLabel, CTkButton
 from .dashboardController   import DashboardController
 
 #display cards, communicate with each component's services for info
 class DashboardUI(CTkFrame):
-    def __init__(self, parent, controller: DashboardController):
+    def __init__(self, parent, controller: DashboardController, splash_key="dashboard"):
         super().__init__(parent)
+        self.parent = parent
         self.controller = controller
+        self.splash_key = splash_key
         
         # 3 column, 3 rows
         self.grid_columnconfigure(0, weight=1)
@@ -18,7 +20,13 @@ class DashboardUI(CTkFrame):
         
         # big title
         CTkLabel(self, text="Dashboard", font=("Helvetica", 35, "bold")).grid(row=0, column=0, columnspan=3, sticky="w", padx=10, pady=10)
-
+        CTkButton(
+            self, 
+            text="ⓘ", 
+            width=30,
+            command=lambda: self.parent.show_page_splash(self.splash_key)
+        ).grid(row=0, column=2, sticky="e", padx=10)
+        
         # top one, big
         countdown_card = CTkFrame(self)
         countdown_card.grid(

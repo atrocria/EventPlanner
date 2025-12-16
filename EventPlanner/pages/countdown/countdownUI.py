@@ -6,10 +6,18 @@ from .countdownController   import CountdownController
 UPDATE_INTERVAL = 1000  # 1 second
 
 class CountdownUI(CTkFrame):
-    def __init__(self, parent, controller: CountdownController, back_target):
+    def __init__(self, parent, controller: CountdownController, back_target, splash_key="countdown"):
         super().__init__(parent)
         self.controller = controller
         self.back_target = back_target
+        self.splash_key = splash_key
+        
+        CTkButton(
+            self,
+            text="ⓘ",
+            width=30,
+            command=lambda: self.winfo_toplevel().show_page_splash(self.splash_key)
+        ).grid(row=0, column=1, sticky="e", padx=(10,0))
 
         self.build_input_screen()
 

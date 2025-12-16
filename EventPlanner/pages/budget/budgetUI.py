@@ -3,10 +3,18 @@ from customtkinter      import CTkFrame, CTkLabel, CTkEntry, CTkButton
 from .budgetController  import BudgetController
 
 class BudgetUI(CTkFrame):
-    def __init__(self, parent, controller: BudgetController, back_target="untitled"):
+    def __init__(self, parent, controller: BudgetController, back_target="untitled", splash_key="budget"):
         super().__init__(parent)
         self.controller = controller
         self.back_target = back_target
+        self.splash_key = splash_key
+        
+        CTkButton(
+            self,
+            text="ⓘ",
+            width=30,
+            command=lambda: self.winfo_toplevel().show_page_splash(self.splash_key)
+        ).pack(side="right")
 
         # -----------------------
         # HEADER
