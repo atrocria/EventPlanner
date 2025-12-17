@@ -2,43 +2,54 @@ from customtkinter  import CTkToplevel, CTkFrame, CTkLabel, CTkButton
 from tkinter        import PhotoImage, Label, TclError
 import os
 
+class SplashState:
+    def __init__(self, base_dir):
+        self.file = os.path.join(base_dir, ".first_launch")
+        self.seen = self.load()
+
+    def load(self):
+        if not os.path.exists(self.file):
+            return set()
+        with open(self.file, "r") as f:
+            return set(line.strip() for line in f if line.strip())
+
+    def has_seen(self, key):
+        # if this returns true, then the splash screen for the module has been seen
+        return key in self.seen
+
+    def mark_seen(self, key):
+        if key not in self.seen:
+            self.seen.add(key)
+            with open(self.file, "a") as f:
+                f.write(key + "\n")
+
 class SplashUI(CTkToplevel):
-    def __init__(self, parent, file_path, on_close=None):
+    def __init__(self, parent, title, message, image_path, on_close=None):
         super().__init__(parent)
 
         self.on_close = on_close
         self.protocol("WM_DELETE_WINDOW", self.close)
 
-        self.title("Welcome")
+        self.title = title
+        self.message = message
         self.resizable(False, False)
 
         # splash size
-        width = 800
-        height = 500
+        width, height = 800, 500
         self.center_on_screen(width, height)
 
         # ---------- BACKGROUND ----------
         self.bg_image = None
-        bg_loaded = False
 
-        if os.path.exists(file_path):
+        if image_path and os.path.exists(image_path):
             try:
-                self.bg_image = PhotoImage(file=file_path)
+                self.bg_image = PhotoImage(file=image_path)
                 self.bg_image = self.bg_image.subsample(2, 2)
-                bg_loaded = True
-            except TclError as e:
-                print("Splash image failed to load:", e)
-
-        if bg_loaded:
-            bg = Label(
-                self,
-                image=self.bg_image,
-                borderwidth=0,
-                highlightthickness=0
-            )
+                bg = Label(self, image=self.bg_image)
+            except TclError:
+                bg = CTkFrame(self, fg_color="#1e1e1e")
         else:
-            # fallback if image fails
-            bg = CTkFrame(self, fg_color="#282828")
+            bg = CTkFrame(self, fg_color="#1e1e1e")
 
         bg.place(relx=0, rely=0, relwidth=1, relheight=1)
 
@@ -49,9 +60,17 @@ class SplashUI(CTkToplevel):
 
         CTkLabel(
             content,
-            text="Welcome to Event Planner",
-            font=("Segoe UI", 22, "bold")
+            text=self.title,
+            font=("Segoe UI", 22, "bold"),
+            text_color="#FF9C43"
         ).pack(pady=(30, 0))
+        
+        CTkLabel(
+            content,
+            text=self.message,
+            font=("Segoe UI", 15, "bold"),
+            wraplength=300
+        ).pack(pady=(5, 0))
 
         CTkButton(
             content,

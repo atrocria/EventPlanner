@@ -49,7 +49,7 @@ class SidebarUI(CTkFrame):
         info_btn.grid(row=100, column=0, pady=10, sticky="w")
 
         if self.buttons:
-            self.select(0)
+            self.on_click(0)
         
     def create_icon_button(self, parent, item, idx):
         # label = item.get("name", f"item{idx}")
@@ -118,7 +118,7 @@ class SidebarUI(CTkFrame):
         #! huh?
         target_frame = self.buttons[index]["target"]
         if self.show_callback and target_frame:
-            self.show_callback(target_frame)
+            self.show_callback(target_frame, getattr(target_frame, "splash_key", None))
         else:
             print("No target/frame assigned / no show_callback given.")
             
