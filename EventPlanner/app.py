@@ -29,6 +29,9 @@ from pages.countdown.countdownService     import CountdownService
 from pages.countdown.countdownController  import CountdownController
 from pages.countdown.countdownUI          import CountdownUI
 
+countdown_service = CountdownService()
+countdown_controller = CountdownController(countdown_service)
+
 def show_frame(frame):
     frame.tkraise()
     
@@ -83,7 +86,7 @@ root.columnconfigure(0, weight=0)
 root.columnconfigure(1, weight=1)
 
 # dashboard page
-dashboard_controller = DashboardController(countdown_service=CountdownService(), budget_service=BudgetService(), tasks_service=TaskServices(), guestlist_service=GuestListService())
+dashboard_controller = DashboardController(countdown_service=countdown_service, budget_service=BudgetService(), tasks_service=TaskServices(), guestlist_service=GuestListService())
 dashboard = DashboardUI(root, controller=dashboard_controller)
 
 # guest manager page
@@ -97,6 +100,11 @@ task_menu = TaskUI(root, controller=task_controller, back_target=dashboard)
 # budget page
 budget_controller = BudgetController(BudgetService())
 budget_menu = BudgetUI(root, controller=budget_controller, back_target=dashboard)
+
+# countdown (ONE instance only)
+countdown_service = CountdownService()
+countdown_controller = CountdownController(countdown_service)
+
 
 # countdown page
 countdown_controller = CountdownController(CountdownService())

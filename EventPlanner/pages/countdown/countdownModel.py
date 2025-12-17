@@ -1,18 +1,20 @@
 from datetime           import datetime
 from .timerStateMachine import TimerState
 
+
 class CountdownModel:
     def __init__(self):
-        self.total_seconds = 0
-        self.end_time = None
-        self.remaining = 0
+        self.total_seconds = 0   
+        self.remaining = 0       
+        self.end_time = None     
         self.state = TimerState.IDLE
 
     def set_countdown(self, days, hours, minutes, seconds):
         self.total_seconds = days*86400 + hours*3600 + minutes*60 + seconds
         self.remaining = self.total_seconds
-        self.state = TimerState.IDLE
         self.end_time = None
+        self.state = TimerState.IDLE
+
 
     def update_remaining(self, now=None):
         if self.state == TimerState.RUNNING:
