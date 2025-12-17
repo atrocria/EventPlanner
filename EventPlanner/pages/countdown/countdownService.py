@@ -7,6 +7,7 @@ class CountdownService:
     def __init__(self):
         self.model = CountdownModel()
 
+
     def start(self, days, hours, minutes, seconds):
         self.model.set_countdown(days, hours, minutes, seconds)
         print("SERVICE total_seconds =", self.model.total_seconds)
