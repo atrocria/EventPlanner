@@ -20,6 +20,9 @@ class CountdownUI(CTkFrame):
         self.controller = controller
         self.back_target = back_target
 
+        
+        self.event_name = StringVar(value="My Event")  
+
         self.build_input_screen()
 
     # ---------- COMMON ----------
@@ -55,6 +58,14 @@ class CountdownUI(CTkFrame):
             font=("Segoe UI", 20, "bold")
         ).pack(pady=10)
 
+       
+        CTkLabel(self, text="Event Name:").pack(pady=5)
+        CTkEntry(
+            self, 
+            width=200, 
+            textvariable=self.event_name  
+        ).pack(pady=5)
+
         self.days = StringVar(value="0")
         self.hours = StringVar(value="0")
         self.minutes = StringVar(value="0")
@@ -85,6 +96,14 @@ class CountdownUI(CTkFrame):
     def build_timer_screen(self):
         self.clear()
         self.configure(fg_color="black")
+
+       
+        CTkLabel(
+            self,
+            textvariable=self.event_name,  
+            font=("Segoe UI", 20, "bold"),
+            text_color="white"
+        ).pack(pady=10)
 
         self.canvas = CTkCanvas(
             self,
@@ -207,11 +226,12 @@ class CountdownUI(CTkFrame):
                 self.finished_shown = True
                 messagebox.showinfo(
                     "Done",
-                    "Countdown finished"
+                    f"{self.event_name.get()} Countdown finished" 
                 )
                 self.build_input_screen()
             return
 
         self.after(UPDATE_INTERVAL, self.update_loop)
+
 
 
