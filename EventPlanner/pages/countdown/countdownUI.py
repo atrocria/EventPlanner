@@ -8,42 +8,45 @@ from customtkinter import (
 )
 from tkinter import messagebox
 from datetime import datetime
-from .timerStateMachine import TimerState
 from .countdownController import CountdownController
+from .timerStateMachine import TimerState
 
-# Shorten update interval to 200ms for smoother animation (5 updates per second)
-UPDATE_INTERVAL = 200  
-
+UPDATE_INTERVAL = 200
 
 class CountdownUI(CTkFrame):
-    def __init__(self, parent, controller: CountdownController, back_target, splash_key="countdown"):
+    # Accept all parameters passed from app.py: parent/controller/back_target/splash_key
+    def __init__(self, parent, controller: CountdownController = None, back_target=None, splash_key="countdown"):
         super().__init__(parent)
-        self.controller = controller
-        self.back_target = back_target
-        
-        # Variable for event name (shared across screens)
-        self.event_name = StringVar(value="My Event")  
-        # New variable for years input (0 by default)
+        self.controller = controller  # Use controller passed from parent (no self-creation)
+        self.back_target = back_target  # Accept back button target function
+        self.splash_key = splash_key    # Accept splash screen key identifier
+        self.finished_alert_shown = False
+
+        # Initialize variables (load saved event name from controller)
+        self.event_name = StringVar(value=self.controller.get_event_name())
         self.years = StringVar(value="0")
+        self.days = StringVar(value="0")
+        self.hours = StringVar(value="0")
+        self.minutes = StringVar(value="0")
+        self.seconds = StringVar(value="0")
 
-        # Initialize with input screen
-        self.build_input_screen()
+        # Auto-load running countdown on startup
+        if self.controller.state == TimerState.RUNNING:
+            # Show timer screen if countdown is active
+            self.build_timer_screen()
+        else:
+            # Show input screen if no active countdown
+            self.build_input_screen()
 
-    # ---------- COMMON METHODS ----------
     def clear(self):
-        """Remove all widgets from the current frame to reset UI"""
+        """Clear all widgets from the current frame"""
         for widget in self.winfo_children():
             widget.destroy()
 
-    # ---------- INPUT VALIDATION (LIMIT NUMERIC INPUTS) ----------
+    # Input Validation Methods
     def validate_int(self, value, max_val):
-        """
-        Validate input is a positive integer within specified range
-        :param value: Input string to validate
-        :param max_val: Maximum allowed numeric value
-        :return: Boolean (True = valid input)
-        """
-        if not value:  # Allow empty input (defaults to 0)
+        """Validate input is a positive integer within specified range"""
+        if not value:
             return True
         try:
             num = int(value)
@@ -52,238 +55,235 @@ class CountdownUI(CTkFrame):
             return False
 
     def create_validator(self, max_val):
-        """Create a registered validation command for entry widgets"""
+        """Create validation command for integer input fields"""
         return self.register(lambda P: self.validate_int(P, max_val))
 
-    # ---------- INPUT SCREEN (PAGE 1: SET COUNTDOWN PARAMETERS) ----------
-    def build_input_screen(self):
-        """Build the input screen for setting countdown time and event name"""
-        self.clear()
+    def _create_input_row(self, parent, label_text, var, row_num, max_val=999):
+        """Create labeled input row with integer validation"""
+        CTkLabel(parent, text=label_text).grid(row=row_num, column=0, padx=5, pady=5)
+        entry = CTkEntry(parent, width=80, textvariable=var)
+        entry.grid(row=row_num, column=1, padx=5)
+        entry.configure(validate="key", validatecommand=(self.create_validator(max_val), "%P"))
 
-        # Display current date and day (top section)
+    # Input Screen (Countdown Configuration)
+    def build_input_screen(self):
+        """Build screen for configuring countdown parameters"""
+        self.clear()
+        self.configure(fg_color="#2b2b2b")
+
+        # Current date/weekday
         current_date = datetime.now().strftime("%Y-%m-%d")
         current_day = datetime.now().strftime("%A")
 
-        CTkLabel(
-            self,
-            text=current_date,
-            font=("Segoe UI", 16, "bold")
-        ).pack(pady=(10, 0))
+        # Title section
+        CTkLabel(self, text="Event Countdown", font=("Segoe UI", 24, "bold"), text_color="white").pack(pady=10)
+        CTkLabel(self, text=current_date, font=("Segoe UI", 16), text_color="lightgray").pack()
+        CTkLabel(self, text=current_day, font=("Segoe UI", 14), text_color="lightgray").pack(pady=(0, 20))
 
-        CTkLabel(
-            self,
-            text=current_day,
-            font=("Segoe UI", 14)
-        ).pack(pady=(0, 10))
+        # Event name input
+        CTkLabel(self, text="Event Name:", font=("Segoe UI", 16), text_color="white").pack()
+        event_entry = CTkEntry(self, width=250, textvariable=self.event_name)
+        event_entry.pack(pady=5, padx=20)
 
-        # Main title
-        CTkLabel(
-            self,
-            text="Set Countdown",
-            font=("Segoe UI", 20, "bold")
-        ).pack(pady=10)
+        # Time input frame (centered, no full-width stretch)
+        time_frame = CTkFrame(self, fg_color="#3b3b3b")
+        time_frame.pack(pady=20)  # Remove fill="x" and padx=20 for center alignment
 
-        # Event Name Input Field
-        CTkLabel(self, text="Event Name:").pack(pady=5)
-        CTkEntry(
-            self, 
-            width=200, 
-            textvariable=self.event_name
-        ).pack(pady=5)
+        # Create time input rows (Years/Days/Hours/Minutes/Seconds)
+        self._create_input_row(time_frame, "Years:", self.years, 0, 99)
+        self._create_input_row(time_frame, "Days:", self.days, 1, 364)
+        self._create_input_row(time_frame, "Hours:", self.hours, 2, 23)
+        self._create_input_row(time_frame, "Minutes:", self.minutes, 3, 59)
+        self._create_input_row(time_frame, "Seconds:", self.seconds, 4, 59)
 
-        # Time input variables (days/hours/minutes/seconds)
-        self.days = StringVar(value="0")
-        self.hours = StringVar(value="0")
-        self.minutes = StringVar(value="0")
-        self.seconds = StringVar(value="0")
+        # Button frame (centered alignment)
+        btn_frame = CTkFrame(self, fg_color="#2b2b2b")
+        btn_frame.pack(pady=20)
+        # Add column weight for center alignment (prevent left alignment)
+        btn_frame.grid_columnconfigure(0, weight=1)
+        btn_frame.grid_columnconfigure(1, weight=1)
 
-        # Form container for time inputs
-        input_form = CTkFrame(self)
-        input_form.pack(pady=10)
-
-        # Add time input rows with validation limits
-        self._create_input_row(input_form, "Years", self.years, 0, 99)    # Max: 99 years
-        self._create_input_row(input_form, "Days", self.days, 1, 364)     # Max: 364 days
-        self._create_input_row(input_form, "Hours", self.hours, 2, 23)    # Max: 23 hours
-        self._create_input_row(input_form, "Minutes", self.minutes, 3, 59)# Max: 59 minutes
-        self._create_input_row(input_form, "Seconds", self.seconds, 4, 59)# Max: 59 seconds
-
-        # Start countdown button
-        CTkButton(
-            self,
+        # Start button (ONLY COLOR MODIFIED - light gray default, orange hover)
+        start_btn = CTkButton(
+            btn_frame,
             text="Start Countdown",
-            command=self.start_countdown
-        ).pack(pady=15)
-
-    def _create_input_row(self, parent, label_text, var, row_num, max_val=999):
-        """
-        Create a labeled input row with numeric validation
-        :param parent: Parent frame for the row
-        :param label_text: Text for the input label
-        :param var: StringVar bound to the entry widget
-        :param row_num: Grid row position for the row
-        :param max_val: Maximum allowed value (default: 999)
-        """
-        # Input label
-        CTkLabel(parent, text=label_text).grid(row=row_num, column=0, padx=5, pady=5)
-        
-        # Input field with validation
-        input_field = CTkEntry(parent, width=80, textvariable=var)
-        input_field.grid(row=row_num, column=1, padx=5)
-        
-        # Configure input validation (only allow 0~max_val integers)
-        input_field.configure(
-            validate="key",
-            validatecommand=(self.create_validator(max_val), "%P")
+            command=self.start_countdown,
+            fg_color="#d0d0d0",  # Light gray default (replaced original blue)
+            hover_color="#ff9f43",  # Orange hover color (as requested)
+            text_color="#333333",  # Dark gray text for better contrast
+            width=150
         )
+        start_btn.grid(row=0, column=0, padx=10)
 
-    # ---------- TIMER SCREEN (PAGE 2: COUNTDOWN DISPLAY) ----------
+        # Back button (if back target provided)
+        if self.back_target:
+            back_btn = CTkButton(
+                btn_frame,
+                text="Back",
+                command=self.back_target,
+                fg_color="#6c757d",
+                hover_color="#545b62",
+                width=150
+            )
+            back_btn.grid(row=0, column=1, padx=10)
+
+    # Timer Display Screen
     def build_timer_screen(self):
-        """Build the full-screen countdown timer with enlarged centered elements"""
+        """Build screen for displaying active countdown"""
         self.clear()
         self.configure(fg_color="black")
 
-        # 1. Enlarged event name (centered with bigger font)
+        # Event name display
         CTkLabel(
             self,
             textvariable=self.event_name,
-            font=("Segoe UI", 32, "bold"),  # Larger font size
+            font=("Segoe UI", 32, "bold"),
             text_color="white"
-        ).pack(pady=30)  # Add top padding for centering
+        ).pack(pady=30)
 
-        # 2. Enlarged canvas for countdown circle (250x250 → 400x400)
+        # Countdown canvas
         self.timer_canvas = CTkCanvas(
             self,
-            width=400,    # Increased width
-            height=400,   # Increased height
+            width=400,
+            height=400,
             bg="black",
-            highlightthickness=0  # Remove border
+            highlightthickness=0
         )
-        self.timer_canvas.pack(pady=20)  # Center canvas vertically
+        self.timer_canvas.pack(pady=20)
 
-        # 3. Enlarged outer circle (thicker border)
+        # Outer circle (orange)
         self.timer_canvas.create_oval(
-            20, 20, 380, 380,  # Expanded circle bounds
-            outline="#FF8C00",  # Original orange color
-            width=15  # Thicker border (12 → 15)
+            20, 20, 380, 380,
+            outline="#FF8C00",
+            width=15
         )
 
-        # 4. Enlarged progress arc (matches outer circle size)
+        # Progress arc (white)
         self.progress_arc = self.timer_canvas.create_arc(
             20, 20, 380, 380,
             start=90,
             extent=0,
             style="arc",
             outline="white",
-            width=15  # Thicker arc border
+            width=15
         )
 
-        # 5. REDUCED time display (smaller font: 48 → 36)
+        # Load saved remaining time
+        remaining = self.controller.service.model.remaining
+        days = remaining // 86400
+        hours = (remaining % 86400) // 3600
+        minutes = (remaining % 3600) // 60
+        seconds = remaining % 60
+
+        # Time display text
         self.time_display = self.timer_canvas.create_text(
-            200, 180,  # Center of 400x400 canvas
-            text="00:00:00:00",
+            200, 180,
+            text=f"{days:02d}:{hours:02d}:{minutes:02d}:{seconds:02d}",
             fill="white",
-            font=("Segoe UI", 36, "bold")  # Smaller font (48 → 36)
+            font=("Segoe UI", 36, "bold")
         )
 
-        # 6. REDUCED date/day text (smaller font: 16 → 14)
+        # Current date display
+        current_date = datetime.now().strftime("%Y-%m-%d")
         self.date_display = self.timer_canvas.create_text(
             200, 220,
-            text="DATE",
+            text=current_date,
             fill="gray",
-            font=("Segoe UI", 14)  # Smaller font (16 → 14)
+            font=("Segoe UI", 14)
         )
-        
+
+        # Remaining days display
         self.days_left_display = self.timer_canvas.create_text(
             200, 250,
-            text="DAY",
+            text=f"{days} day(s) remaining",
             fill="gray",
-            font=("Segoe UI", 14)  # Smaller font (16 → 14)
+            font=("Segoe UI", 14)
         )
 
-        # 7. Enlarged reset button (bigger size + font)
-        CTkButton(
+        # Reset button
+        reset_btn = CTkButton(
             self,
             text="Reset",
-            font=("Segoe UI", 16, "bold"),  # Larger font
-            width=120,  # Wider button
-            height=40,  # Taller button
-            command=self.reset_countdown
-        ).pack(pady=30)  # Add bottom padding for centering
+            command=self.reset_countdown,
+            fg_color="#dc3545",
+            hover_color="#c82333",
+            width=120,
+            height=40,
+            font=("Segoe UI", 16, "bold")
+        )
+        reset_btn.pack(pady=30)
 
-        # Start smooth update loop
+        # Start real-time update loop
         self.start_update_loop()
 
-    # ---------- ACTION METHODS ----------
+    # Core Functionality Methods
     def start_countdown(self):
-        """Validate inputs and start the countdown timer"""
+        """Start countdown after validating input parameters"""
         try:
-            # Convert input values to integers (including years → days conversion)
+            # Convert input values to integers
             years = int(self.years.get())
-            days = int(self.days.get()) + (years * 365)  # 1 year = 365 days
+            days = int(self.days.get()) + (years * 365)
             hours = int(self.hours.get())
             minutes = int(self.minutes.get())
             seconds = int(self.seconds.get())
 
+            # Save event name to controller
+            self.controller.set_event_name(self.event_name.get())
+
         except ValueError:
-            messagebox.showerror("Invalid Input", "Enter valid numbers only (0 to maximum limit).")
+            messagebox.showerror("Invalid Input", "Please enter only numeric values (0-99)")
             return
 
-        # Calculate total seconds to validate positive time
+        # Validate total time is greater than 0
         total_seconds = (days * 86400) + (hours * 3600) + (minutes * 60) + seconds
         if total_seconds <= 0:
-            messagebox.showerror("Invalid Input", "Total countdown time must be greater than zero.")
+            messagebox.showerror("Invalid Time", "Please enter a time greater than 0")
             return
 
-        # Initialize countdown via controller
+        # Start countdown via controller
         self.controller.start(days, hours, minutes, seconds)
         self.finished_alert_shown = False
         self.build_timer_screen()
 
     def reset_countdown(self):
-        """Reset countdown and return to input screen"""
+        """Reset countdown to initial state via controller"""
         self.controller.reset()
         self.build_input_screen()
 
-    # ---------- UPDATE LOOP (SMOOTH ANIMATION) ----------
     def start_update_loop(self):
-        """Continuous update loop for smooth countdown animation (200ms interval)"""
-        # Get remaining seconds from controller
-        remaining_seconds = self.controller.tick()
-        total_seconds = self.controller.service.model.total_seconds
-
-        # Calculate time breakdown (DD:HH:MM:SS)
-        days_remaining = remaining_seconds // 86400
-        hours_remaining = (remaining_seconds % 86400) // 3600
-        minutes_remaining = (remaining_seconds % 3600) // 60
-        seconds_remaining = remaining_seconds % 60
-
-        # Update time display text
-        self.timer_canvas.itemconfigure(
-            self.time_display,
-            text=f"{days_remaining:02d}:{hours_remaining:02d}:{minutes_remaining:02d}:{seconds_remaining:02d}"
-        )
-
-        # Update current date display
-        current_date = datetime.now().strftime("%Y-%m-%d")
-        self.timer_canvas.itemconfigure(self.date_display, text=current_date)
-        self.timer_canvas.itemconfigure(self.days_left_display, text=f"{days_remaining} day(s)")
-
-        # Update progress arc with smooth angle changes
-        if total_seconds > 0:
-            progress_angle = 360 * (1 - (remaining_seconds / total_seconds))
-            self.timer_canvas.itemconfigure(self.progress_arc, extent=progress_angle)
-
-        # Handle countdown completion
-        if self.controller.state == TimerState.FINISHED:
-            if not self.finished_alert_shown:
-                self.finished_alert_shown = True
-                messagebox.showinfo(
-                    "Countdown Complete",
-                    f"{self.event_name.get()} countdown has finished!"
-                )
-                self.build_input_screen()  # Return to input screen
+        """Real-time countdown update loop (runs every UPDATE_INTERVAL ms)"""
+        # Show completion alert when countdown finishes
+        if self.controller.state == TimerState.FINISHED and not self.finished_alert_shown:
+            messagebox.showinfo("Countdown Complete", f"{self.event_name.get()} has finished!")
+            self.finished_alert_shown = True
+            self.build_input_screen()
             return
 
-        # Schedule next update (200ms = smoother animation)
+        # Get updated remaining time
+        remaining = self.controller.tick()
+        total = self.controller.service.model.total_seconds
+
+        # Calculate time components
+        days = remaining // 86400
+        hours = (remaining % 86400) // 3600
+        minutes = (remaining % 3600) // 60
+        seconds = remaining % 60
+
+        # Update time display
+        self.timer_canvas.itemconfigure(
+            self.time_display,
+            text=f"{days:02d}:{hours:02d}:{minutes:02d}:{seconds:02d}"
+        )
+
+        # Update progress arc
+        if total > 0:
+            progress_angle = 360 * (1 - (remaining / total))
+            self.timer_canvas.itemconfigure(self.progress_arc, extent=progress_angle)
+
+        # Update date and remaining days display
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        self.timer_canvas.itemconfigure(self.date_display, text=current_date)
+        self.timer_canvas.itemconfigure(self.days_left_display, text=f"{days} day(s) remaining")
+
+        # Repeat update loop
         self.after(UPDATE_INTERVAL, self.start_update_loop)
