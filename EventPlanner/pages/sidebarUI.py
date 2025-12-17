@@ -98,7 +98,7 @@ class SidebarUI(CTkFrame):
             canvas.itemconfigure(circle, fill=self.unselected_hover[0])
 
         # always change cursor
-        canvas.configure(cursor="crosshair")
+        canvas.configure(cursor="hand2")
 
     def on_nav_leave(self, canvas, circle, index):
         # revert only if NOT selected

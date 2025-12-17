@@ -4,8 +4,8 @@ class TaskController:
     def __init__(self, service: TaskServices):
         self.service = service
 
-    def add_task(self, text):
-        return self.service.add(text)
+    def add_task(self, text, time=None):
+        return self.service.add(text, time)
 
     def delete_task(self, task_id):
         self.service.delete_by_id(task_id)

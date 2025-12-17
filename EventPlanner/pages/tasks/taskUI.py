@@ -2,6 +2,7 @@ import customtkinter    as ctk
 from customtkinter      import CTkFrame, CTkEntry, CTkButton, CTkLabel, CTkCheckBox, CTkScrollableFrame, CTkFont, BooleanVar
 from .taskController    import TaskController
 from .tasksModel        import TaskModel
+from .tasktimeUI        import TaskTimeUI
 
 #TODO: due date, send button
 
@@ -26,9 +27,6 @@ class TaskItem(CTkFrame):
         self.delete_var.trace_add("write", self.on_delete_toggle)
         self.delete_box = None
         
-        # close task menu
-        self.menu_can_close = False
-        self.winfo_toplevel().bind("<Button-1>", self.on_global_click, add="+")
         
         # config for each task which goes inside tasks_box
         self.grid_rowconfigure(0, weight=1)
@@ -58,9 +56,13 @@ class TaskItem(CTkFrame):
 
         # kabab button, yum view more stuff
         self.task_option = CTkButton(self, text="⋮", font=CTkFont("Helvetica", 25, "bold"), text_color="white", fg_color=self.normal_bg, hover_color="#101010", corner_radius=15, command=self.toggle_taskme)
-        self.task_option.grid(row=0, column=2)
+        self.task_option.grid(row=0, column=2, sticky="e")
         
+        # task menu stats
         self.menu_open = False
+        self.menu_can_close = False
+        self.menu_debounce_ms = 150
+        self.winfo_toplevel().bind("<Button-1>", self.on_global_click, add="+")
         
         self.menu_frame = CTkFrame(
             self.winfo_toplevel(),
@@ -84,6 +86,13 @@ class TaskItem(CTkFrame):
             command=self.start_edit
         ).pack(fill="x", padx=8, pady=4)
 
+        CTkButton(
+            self.menu_frame,
+            text="⏱ Set Time",
+            anchor="w",
+            command=self.open_time_ui
+        ).pack(fill="x", padx=8, pady=4)
+
     # menu toggle
     def toggle_taskme(self):
         if self.menu_open:
@@ -100,29 +109,34 @@ class TaskItem(CTkFrame):
         tx = self.winfo_toplevel().winfo_rootx()
         ty = self.winfo_toplevel().winfo_rooty()
 
-        print("MENU PARENT:", self.menu_frame.master)
         self.menu_frame.place(
             x=bx - tx - 120,
             y=by - ty + bh
         )
-        print("MAPPED:", self.menu_frame.winfo_ismapped())
-        print(
-            "PLACE AT:",
-            bx - tx - self.menu_frame.winfo_width(),
-            by - ty + bh
-        )
 
-        self.menu_frame.lift()
         self.menu_frame.tkraise()
-        self.menu_frame.lift(self.winfo_toplevel())
+        self.menu_frame.lift()
 
         self.menu_open = True
-        self.after(100, self._enable_menu_close)
-        print("reached")
+        self.after(self.menu_debounce_ms, self._enable_menu_close)
     
     def _enable_menu_close(self):
         self.menu_can_close = True
         
+    def open_time_ui(self):
+        self.menu_frame.place_forget()
+        self.menu_open = False
+
+        TaskTimeUI(
+            parent=self.winfo_toplevel(),
+            task=self.task,
+            on_save=self.on_time_set
+        )
+        
+    def on_time_set(self, seconds):
+        print(f"Task {self.task.id} → {seconds} s")
+        self.on_edited(self.task.id, self.task.text)
+    
     # check if in cooldown, go to apply resize function
     def on_resize(self, event):
         if self.resize_cooldown:
@@ -196,6 +210,7 @@ class TaskItem(CTkFrame):
     def start_edit(self, event=None):
         # hide the label
         self.label.grid_remove()
+        self.menu_frame.place_forget()
 
         # make an entry with the current text
         self.edit_entry = CTkEntry(self, width=250)
@@ -238,14 +253,31 @@ class TaskItem(CTkFrame):
     def on_global_click(self, event):
         if not self.menu_open:
             return
+        
+        if not self.menu_can_close:
+            return
+        
+        # True = click location is inside widget
+        if self.clicked_location_compare(event, self.task_option):
+            return
+        
+        if self.clicked_location_compare(event, self.menu_frame):
+            return
 
+        # If click is outside its task row and its menu, close it
+        self.menu_frame.place_forget()
+        self.menu_open = False
+        self.menu_can_close = False
+    
+    # check clicked widget and compare 
+    def clicked_location_compare(self, event, widget):
         clicked_widget = self.winfo_toplevel().winfo_containing(event.x_root, event.y_root)
-
-        # If click is outside this task row and its menu, close it
-        if clicked_widget not in (self.menu_frame, self.task_option):
-            self.menu_frame.place_forget()
-            self.menu_open = False
-            self.menu_can_close = False
+        
+        while clicked_widget:
+            if clicked_widget == widget:
+                return True
+            clicked_widget = clicked_widget.master
+        return False
 
 class TaskUI(CTkFrame):
     def __init__(self, parent, controller: TaskController, back_target, splash_key="tasks"):
@@ -355,7 +387,6 @@ class TaskUI(CTkFrame):
         self.add_task_widget(task)
             
         self.entry.delete(0, "end")
-        print("task posted: UI")
         
     def on_task_deletion(self, task_id):
         self.controller.delete_task(task_id)
@@ -420,8 +451,7 @@ class TaskUI(CTkFrame):
         self._regrid_tasks()
         
         # exit delete mode and delete duty
-        for item in self.framedTasks.values():
-            item.disable_delete_mode()
+        self.bulk_delete_cancel()
     
     def on_delete_select(self, task_id, selected):
         if selected:

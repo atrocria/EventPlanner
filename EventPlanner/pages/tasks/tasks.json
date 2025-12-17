@@ -8,5 +8,25 @@
         "id": "d50aaff19abf4200bcb0feace758c083",
         "text": "undone",
         "done": false
+    },
+    {
+        "id": "86205ce9fddf48a8850c6dd3820d1d7a",
+        "text": "bulk",
+        "done": false
+    },
+    {
+        "id": "291030c7be2f4bf6a14f6f9c9db759bf",
+        "text": "bulk delete",
+        "done": false
+    },
+    {
+        "id": "f414662fc389487eb1546852e7172492",
+        "text": "bulk delete",
+        "done": false
+    },
+    {
+        "id": "3dfb32c7b4c94b4e8bb5bd2196d3f5e7",
+        "text": "bulk delete",
+        "done": false
     }
 ]

@@ -7,7 +7,7 @@ class TaskServices():
         self.tasks: list[TaskModel] = []
         self.load()
 
-    def add(self, text: str) -> TaskModel:
+    def add(self, text: str, time=None) -> TaskModel:
         task = TaskModel(text)
         self.tasks.append(task)
         self.save()
