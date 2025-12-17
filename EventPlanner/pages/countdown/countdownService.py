@@ -6,30 +6,25 @@ class CountdownService:
     def __init__(self):
         self.model = CountdownModel()
 
+    #! use json, write countdown end date, load date
+    
     def start(self, days, hours, minutes, seconds):
-        if self.can_start():
-            self.model.set_countdown(days, hours, minutes, seconds)
-
-            if self.model.total_seconds > 0:
-                self.model.end_time = datetime.now() + timedelta(seconds=self.model.total_seconds)
-                self.model.state = TimerState.RUNNING
-            else:
-                self.model.state = TimerState.FINISHED 
-                
-
-    def pause(self):
-        if self.can_pause():
-            self.model.state = TimerState.PAUSED
+        self.model.set_countdown(days, hours, minutes, seconds)
+        print("SERVICE total_seconds =", self.model.total_seconds)
+        
+        if self.model.total_seconds > 0:
+            self.model.end_time = datetime.now() + timedelta(seconds=self.model.total_seconds)
+            self.model.state = TimerState.RUNNING
 
     def reset(self):
-        self.model = CountdownModel()
+        self.model.state = TimerState.IDLE
+        self.model.remaining = self.model.total_seconds
 
     def tick(self):
-        self.model.update_remaining()
+        if self.model.state == TimerState.RUNNING:
+            now = datetime.now()
+            self.model.remaining = max(0, int((self.model.end_time - now).total_seconds()))
+            if self.model.remaining == 0:
+                self.model.state = TimerState.FINISHED
         return self.model.remaining
 
-    def can_start(self):
-        return self.model.state in (TimerState.IDLE, TimerState.PAUSED, TimerState.FINISHED)
-
-    def can_pause(self):
-        return self.model.state == TimerState.RUNNING

@@ -44,7 +44,6 @@ class TaskTimeUI(CTkToplevel):
         )
         self.task_label.pack(pady=(10, 6))
 
-
         self.canvas_height = 300
         self.canvas_width = 380
         
@@ -54,6 +53,12 @@ class TaskTimeUI(CTkToplevel):
         
         self.edge_padding = 20
         self.max_radius = min(self.center_x, self.center_y) - self.edge_padding
+        
+        # over-bounds calculation
+        self.overflow_active = False
+        self.overflow_direction = 0 # +1 increase, -1 decrease
+        self.overflow_after_id = None
+        self.overflow_speed = 1.0   # momentum for increase
         
         # snapback anim
         self.snap_animating = False
@@ -177,56 +182,40 @@ class TaskTimeUI(CTkToplevel):
         # non linear scaling, gestimer inspired
         dx = event.x - self.center_x
         dy = event.y - self.center_y
-        distance = math.sqrt(dx*dx + dy*dy) # triangle mmm
+        distance = math.hypot(dx, dy) # triangle mmm
 
         # clamp
-        if distance > self.max_radius:
+        if distance <= self.max_radius:
+            # normal mode
+            self.overflow_active = False
+            
+            # clamped unit 1
+            normalized = distance / self.max_radius
+            self.seconds = int(self.max_seconds * (normalized ** 1.4))
+            
+            # update ball position
+            self.handle_x = self.center_x + dx
+            self.handle_y = self.center_y + dy
+        else:
+            # overflow mode
+            self.overflow_active = True
+            
+            # direction: in vs out
+            dot = dx * (self.handle_x - self.center_x) + dy * (self.handle_y - self.center_y)
+            self.overflow_direction = 1 if dot > 0 else -1
+            
+            # clamp handle visually to edge
             scale = self.max_radius / distance
+            self.handle_x = self.center_x + dx * scale
+            self.handle_y = self.center_y + dy * scale
+            
+            # overflow speed scaling #! maybe adjust with how long inside bounds?
+            excess = distance - self.max_radius
+            self.overflow_speed = min(50, 1 + excess * 0.05)
             dx *= scale
             dy *= scale
             distance = self.max_radius
         
-        # update ball position
-        self.handle_x = self.center_x + dx
-        self.handle_y = self.center_y + dy
-        
-        # clamped unit 1
-        normalized = distance / self.max_radius
-
-        if normalized < 0.25:
-            # 0–10 min
-            local = normalized / 0.25
-            seconds = local * 10 * 60
-
-        elif normalized < 0.45:
-            # 10–60 min
-            local = (normalized - 0.25) / 0.20
-            seconds = 10*60 + local * 50*60
-
-        elif normalized < 0.60:
-            # 1–6 h
-            local = (normalized - 0.45) / 0.15
-            seconds = 60*60 + local * 5*3600
-
-        elif normalized < 0.72:
-            # 6–24 h
-            local = (normalized - 0.60) / 0.12
-            seconds = 6*3600 + local * 18*3600
-
-        elif normalized < 0.82:
-            # 1–7 days
-            local = (normalized - 0.72) / 0.10
-            seconds = 24*3600 + local * 6*24*3600
-
-        elif normalized < 0.92:
-            # 1–4 weeks
-            local = (normalized - 0.82) / 0.10
-            seconds = 7*24*3600 + local * 3*7*24*3600
-
-        else:
-            # months → years
-            local = (normalized - 0.92) / 0.08
-            seconds = 28*24*3600 + local * (self.max_seconds - 28*24*3600)
 
         self.seconds = int(max(0, min(seconds, self.max_seconds)))
 
