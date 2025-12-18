@@ -1,9 +1,11 @@
-from .countdownService  import CountdownService
-from .timerStateMachine  import TimerState
+from .countdownService import CountdownService
+from .timerStateMachine import TimerState
 
 class CountdownController:
-    def __init__(self, service: CountdownService):
-        self.service = service
+    # Compatibility mode: service parameter is optional (use passed service or create new)
+    def __init__(self, service: CountdownService = None):
+        # Use passed service if provided, otherwise create a new CountdownService instance
+        self.service = service if service is not None else CountdownService()
 
     @property
     def state(self):
@@ -17,3 +19,9 @@ class CountdownController:
 
     def tick(self):
         return self.service.tick()
+
+    def get_event_name(self):
+        return self.service.model.event_name
+
+    def set_event_name(self, name):
+        self.service.model.event_name = name
