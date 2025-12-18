@@ -11,7 +11,7 @@ class TaskController:
         self.service.delete_by_id(task_id)
 
     def delete_tasks(self, task_ids: list[str]):
-            self.service.delete_by_ids(task_ids)
+        self.service.delete_by_ids(task_ids)
 
     def toggle_task(self, task_id):
         self.service.toggle_by_id(task_id)
@@ -19,8 +19,21 @@ class TaskController:
     def get_task(self):
         return self.service.all()
     
+    def get_tasks_info(self):
+        total = self.service.count_all()
+
+        return {
+            "has_tasks": total > 0,
+            "total": total,
+            "completed": self.service.count_completed(),
+            "pending": self.service.count_pending(),
+        }
+    
     def update_task(self, task_id, new_text):
         self.service.update_text(task_id, new_text)
         
     def get_task_by_id(self, task_id):
         return self.service.get_by_id(task_id)
+    
+    def reorder_tasks(self, ordered_ids: list[str]):
+        self.service.reorder(ordered_ids)

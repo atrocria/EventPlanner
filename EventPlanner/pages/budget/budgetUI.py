@@ -22,8 +22,19 @@ class BudgetUI(CTkFrame):
         CTkLabel(self, text="Budget Tracker", font=("Arial", 20, "bold")).pack(pady=10)
 
         # Back button
-        CTkButton(self, text="Back to Home", width=120,
-                  command=lambda: back_target.tkraise()).pack(pady=5)
+        CTkButton(
+            self,
+            text="← Back to Dashboard",
+            width=180,
+            height=38,
+            fg_color="transparent",
+            hover_color="#3a3a3a",
+            text_color="#bbbbbb",
+            border_width=1,
+            border_color="#555555",
+            corner_radius=10,
+            command=self.go_back
+        ).pack(pady=5)
 
         # -----------------------
         # INPUT FORM
@@ -77,6 +88,22 @@ class BudgetUI(CTkFrame):
         self.amount_entry.delete(0, "end")
 
         self.refresh_list()
+        
+    def go_back(self):
+        if not self.back_target:
+            return
+
+        # show dashboard
+        self.back_target.tkraise()
+
+        # sync sidebar highlight
+        root = self.winfo_toplevel()
+        if hasattr(root, "sidebar"):
+            root.sidebar.select_by_target(self.back_target)
+
+        # refresh dashboard if needed
+        if hasattr(self.back_target, "refresh"):
+            self.back_target.refresh()
 
     # ----------------------------------------------------
     # DELETE ITEM

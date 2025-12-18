@@ -25,7 +25,7 @@ def format_duration(seconds: int) -> str:
     return " ".join(parts) if parts else "0s"
 
 class TaskTimeUI(CTkToplevel):
-    def __init__(self, parent, task, on_save, max_seconds=1200000000):
+    def __init__(self, parent, task, on_save, max_seconds=1200000):
         super().__init__(parent)
 
         self.title("Set Time")
@@ -42,6 +42,14 @@ class TaskTimeUI(CTkToplevel):
             anchor_seconds=365 * 24 * 3600  # 1 year
         )
         self.last_time = datetime.datetime.now()
+        
+        now = datetime.datetime.now()
+        if task.due_at:
+            delta = task.due_at - now
+            self.selected_seconds = max(0, int(delta.total_seconds()))
+        else:
+            self.selected_seconds = 0
+        self.dial.true_seconds = self.selected_seconds
         
         # the task
         self.task_label = CTkLabel(
@@ -175,6 +183,14 @@ class TaskTimeUI(CTkToplevel):
         CTkButton(btns, text="Save", command=self.save).pack(side="left", padx = 8)
         CTkButton(btns, text="Cancel", command=self.destroy).pack(side="left", padx = 8)
         
+    def sync_date_from_seconds(self, seconds: int):
+        now = datetime.datetime.now()
+        future = now + datetime.timedelta(seconds=seconds)
+        
+        self.day_var.set(str(future.day))
+        self.month_var.set(str(future.month))
+        self.year_var.set(str(future.year))
+        
     def start_loop(self):
         self.last_tick = time.perf_counter()
         self.tick()
@@ -278,6 +294,8 @@ class TaskTimeUI(CTkToplevel):
         self.overflow_after_id = None
         self.previewing = False         # dragging or nah
         self.selected_seconds = int(self.dial.true_seconds)
+        self.selected_seconds = int(self.dial.true_seconds)
+        self.sync_date_from_seconds(self.selected_seconds)
         
         self.snap_animating = True
         self.snap_step()
@@ -318,15 +336,8 @@ class TaskTimeUI(CTkToplevel):
         )
         
     def save(self):
-        year = int(self.year_var.get())
-        month = int(self.month_var.get())
-        day = int(self.day_var.get())
+        now = datetime.datetime.now()
+        due_at = now + datetime.timedelta(seconds=self.selected_seconds)
 
-        base_date = datetime.datetime(year, month, day)
-
-        final_time = base_date + datetime.timedelta(
-            seconds=self.selected_seconds
-        )
-
-        self.on_save(final_time)
+        self.on_save(due_at)
         self.destroy()

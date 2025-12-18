@@ -1,7 +1,8 @@
-from pages.countdown.countdownService import CountdownService
-from pages.budget.budgetServices      import BudgetService
-from pages.tasks.tasksServices        import TaskServices
-from pages.guestlist.guestlistService import GuestListService
+from pages.countdown.countdownService   import CountdownService
+from pages.budget.budgetServices        import BudgetService
+from pages.tasks.tasksServices          import TaskServices
+from pages.guestlist.guestlistService   import GuestListService
+from pages.countdown.timerStateMachine  import TimerState
 
 #display cards, communicate with each component's services for info
 class DashboardController():
@@ -12,14 +13,66 @@ class DashboardController():
         self.guestlist_service = guestlist_service
         print("sup")
 
-    def get_countdown_info():
-        pass
+    def get_countdown_info(self):
+        model = self.countdown_service.model
+        remaining = self.countdown_service.tick()
+
+        has_countdown = (
+            model.end_time is not None and
+            model.state != TimerState.IDLE
+        )
+
+        return {
+            "has_countdown": has_countdown,
+            "event_name": model.event_name,
+            "remaining": remaining,
+            "state": model.state.name
+        }
         
-    def get_budget_info():
-        pass
+    def get_budget_info(self):
+        if not self.budget_service.has_items():
+            return {
+                "has_budget": False
+            }
 
-    def get_guestlist_info():
-        pass
+        return {
+            "has_budget": True,
+            "count": self.budget_service.count_items(),
+            "total": self.budget_service.get_total()
+        }
 
-    def get_tasks_info():
-        pass
+    def get_guestlist_info(self):
+        total = self.guestlist_service.count_all()
+
+        if total == 0:
+            return {
+                "has_guests": False
+            }
+
+        confirmed = self.guestlist_service.count_confirmed()
+        pending = self.guestlist_service.count_pending()
+
+        return {
+            "has_guests": True,
+            "total": total,
+            "confirmed": confirmed,
+            "pending": pending
+        }
+
+    def get_tasks_info(self):
+        total = self.tasks_service.count_all()
+
+        if total == 0:
+            return {
+                "has_tasks": False
+            }
+
+        completed = self.tasks_service.count_completed()
+        pending = total - completed
+
+        return {
+            "has_tasks": True,
+            "total": total,
+            "completed": completed,
+            "pending": pending
+        }

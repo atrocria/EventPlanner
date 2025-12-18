@@ -33,7 +33,6 @@ class SidebarUI(CTkFrame):
             canvas.grid(row=idx, column=0, pady=8)
             self.buttons.append({"canvas": canvas,"circle": circle, "target": item.get("target")})
 
-        #! bottom spacer so sidebar doesn't stretch weirdly?
         self.rowconfigure(99, weight=1)
         
         info_btn = CTkButton(
@@ -115,7 +114,6 @@ class SidebarUI(CTkFrame):
 
         self.select(index)
         
-        #! huh?
         target_frame = self.buttons[index]["target"]
         if self.show_callback and target_frame:
             self.show_callback(target_frame, getattr(target_frame, "splash_key", None))
@@ -137,3 +135,9 @@ class SidebarUI(CTkFrame):
         new_btn["canvas"].itemconfigure(new_btn["circle"], fill=self.selected_fg[0])
         
         self.selected_index = index
+        
+    def select_by_target(self, target_frame):
+        for idx, btn in enumerate(self.buttons):
+            if btn["target"] is target_frame:
+                self.select(idx)
+                return
