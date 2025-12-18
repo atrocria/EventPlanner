@@ -33,8 +33,6 @@ from pages.countdown.countdownUI          import CountdownUI
 countdown_service = CountdownService()
 countdown_controller = CountdownController(countdown_service)
 
-
-
 def show_frame(frame, splash_key=None):
     frame.tkraise()
 
