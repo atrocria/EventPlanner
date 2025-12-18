@@ -2,9 +2,10 @@ import json
 from .tasksModel import TaskModel
 
 class TaskServices():
-    def __init__(self, file_path="tasks.json"):
+    def __init__(self, file_path="tasks.json", countdown_service=None):
         self.file_path = file_path
         self.tasks: list[TaskModel] = []
+        self.countdown_service = countdown_service
         self.load()
 
     def add(self, text: str, due_at=None) -> TaskModel:
@@ -81,3 +82,10 @@ class TaskServices():
     def normalize_order(self):
         for index, task in enumerate(self.all()):
             task.order = index
+            
+    def get_anchor_seconds(self) -> int:
+        if self.countdown_service:
+            return self.countdown_service.get_anchor_seconds()
+
+        # fallback if countdown not wired
+        return 365*24*60*60

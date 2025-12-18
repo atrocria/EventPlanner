@@ -88,3 +88,20 @@ class CountdownService:
                 self.model.state = TimerState.FINISHED
                 self.save_json()
         return self.model.remaining
+    
+    def get_anchor_seconds(self) -> int:
+        """
+        Return anchor seconds for time-based UIs.
+        Priority:
+        - remaining time if running
+        - total time if idle
+        - fallback if unset
+        """
+        if self.model.state == TimerState.RUNNING:
+            return max(1, self.model.remaining)
+
+        if self.model.total_seconds > 0:
+            return self.model.total_seconds
+
+        # fallback: 1 year
+        return 365*24*60*60

@@ -9,11 +9,12 @@ from .tasktimeUI        import TaskTimeUI
 #TODO: due date, send button
 
 class TaskItem(CTkFrame):
-    def __init__(self, parent, task: TaskModel, on_delete, on_edited, on_toggled, sync_order):
+    def __init__(self, parent, *, controller, task: TaskModel, on_delete, on_edited, on_toggled, sync_order):
         super().__init__(parent, fg_color="#202020", corner_radius=6)
         
         # task element consists: id, text, done_bool.
         # tasks can be deleted, edited, checked, and dynamically resized by changing of window size
+        self.controller = controller
         self.task = task
         self.on_delete = on_delete
         self.on_edited = on_edited
@@ -187,7 +188,8 @@ class TaskItem(CTkFrame):
         TaskTimeUI(
             parent=self.winfo_toplevel(),
             task=self.task,
-            on_save=self.on_time_set
+            on_save=self.on_time_set,
+            anchor_seconds=self.controller.get_anchor_seconds()
         )
         
     def on_time_set(self, due_at: datetime.datetime): #! controller persist due_at
@@ -492,7 +494,8 @@ class TaskUI(CTkFrame):
         index = len(self.framedTasks)
         item = TaskItem(
             self.tasks_box,
-            task,
+            task=task,
+            controller=self.controller,
             on_delete=self.on_task_deletion,
             on_edited=self.on_task_edit,
             on_toggled=self.on_task_toggled,

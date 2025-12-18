@@ -37,3 +37,6 @@ class TaskController:
     
     def reorder_tasks(self, ordered_ids: list[str]):
         self.service.reorder(ordered_ids)
+        
+    def get_anchor_seconds(self) -> int:
+        return self.service.get_anchor_seconds()

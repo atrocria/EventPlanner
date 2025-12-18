@@ -118,7 +118,7 @@ root.columnconfigure(1, weight=1)
 countdown_service = CountdownService()
 countdown_controller = CountdownController(countdown_service)
 
-task_service = TaskServices(file_path=os.path.join(BASE_DIR, "pages", "tasks", "tasks.json"))
+task_service = TaskServices(file_path=os.path.join(BASE_DIR, "pages", "tasks", "tasks.json"), countdown_service=countdown_service)
 task_controller = TaskController(task_service)
 
 budget_service = BudgetService()

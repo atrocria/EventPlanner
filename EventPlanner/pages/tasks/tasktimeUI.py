@@ -1,6 +1,7 @@
 import tkinter              as tk 
 from customtkinter          import CTkToplevel, CTkFrame, CTkButton, CTkLabel, CTkComboBox
 from .tasktime_statemachine import TimeDial
+from .taskController        import TaskController
 import datetime
 import time
 import math
@@ -25,7 +26,7 @@ def format_duration(seconds: int) -> str:
     return " ".join(parts) if parts else "0s"
 
 class TaskTimeUI(CTkToplevel):
-    def __init__(self, parent, task, on_save, max_seconds=1200000):
+    def __init__(self, parent, task, on_save, anchor_seconds, max_seconds=100000000):
         super().__init__(parent)
 
         self.title("Set Time")
@@ -37,9 +38,11 @@ class TaskTimeUI(CTkToplevel):
         self.task = task
         self.on_save = on_save
         self.max_seconds = max_seconds
+        self.anchor_seconds = anchor_seconds
         self.dial = TimeDial(
             max_seconds=self.max_seconds,
-            anchor_seconds=365 * 24 * 3600  # 1 year
+            anchor_seconds=  anchor_seconds,
+            inner_scale_seconds=180 * 24 * 3600 # half a year
         )
         self.last_time = datetime.datetime.now()
         

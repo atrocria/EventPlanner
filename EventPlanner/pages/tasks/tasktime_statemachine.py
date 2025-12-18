@@ -1,104 +1,123 @@
 import math
 
 class TimeDial:
-    def __init__(self, max_seconds, anchor_seconds):
-        self.max_seconds = max_seconds
-        self.anchor_seconds = anchor_seconds
-        
-        self.true_seconds = 0
-        
-        self.outside_distance = 0.0
+    """
+    Time dial with two regimes:
+      - inside circle: geometric mapping from 0..inner_scale_seconds
+      - outside circle: momentum-driven motion starting from anchor_seconds
+
+    Constructor:
+        TimeDial(max_seconds: int,
+                 anchor_seconds: int,
+                 inner_scale_seconds: int)
+    """
+    def __init__(self, max_seconds: int, anchor_seconds: int, inner_scale_seconds: int):
+        self.max_seconds = int(max_seconds)
+        self.anchor_seconds = int(anchor_seconds) if anchor_seconds is not None else int(inner_scale_seconds)
+        self.inner_scale_seconds = int(inner_scale_seconds)
+
+        self.true_seconds = 0.0
+
+        # momentum / outside state
         self.outside_time = 0.0
         self.momentum = 0.0
         self.decay = 0.995
-        self.threshold = 0.001 # threshold before deciding to move
-        
-        self.last_direction = 0        # -1, 0, +1
-        self.direction_timer = 0.0     # how long we've been unsure
-        self.direction_delay = 0.1     # how long is the temporal unsureness gonna last
+        self.threshold = 0.001
+
+        # direction detection
+        self.last_direction = 0
+        self.direction_timer = 0.0
+        self.direction_delay = 0.1
 
         self.prev_outside = 0.0
-        
-    def update(self, raw_distance, max_radius, dt):
-        # magnitude: mouse to bounds vector
-        outside = raw_distance - max_radius
-        
-        # inside dial: geometry owns time
-        if outside <= 0:
-            self.outside_time = 0
-            self.momentum = 0           # stop momentum and switch to geometric scaling time
-            self.last_direction = 0
-            self.direction_timer = 0
-            self.prev_outside = outside
-            
-            t = raw_distance / max_radius
-            self.true_seconds = int(self.anchor_seconds * (t ** 1.4))
-            return int(self.true_seconds)
-            
-        # outside dial: momentum owns time (after 1 year)
-        # seconds elapsed
-        self.outside_time += dt
-        
-        # intent detection: 3 states: pulling outwards, hessitating, pulling inwards
-        delta = outside - self.prev_outside
-        self.prev_outside = outside # calculate distance from last location and storing it, then renew position next update
+        self.anchor_locked = False   # becomes True once user first crosses outside boundary
 
-        # normal = 1, hessitate = 0, decrease = 1 
+    def update(self, raw_distance: float, max_radius: float, dt: float) -> int:
+        """
+        raw_distance: distance from center to pointer
+        max_radius: radius of inner dial (geometry)
+        dt: delta time seconds since last update
+        returns: int true_seconds
+        """
+        outside = raw_distance - max_radius
+
+        # --- INSIDE: geometry maps to [0 .. inner_scale_seconds]
+        if outside <= 0:
+            # reset outside/momentum state
+            self.outside_time = 0.0
+            self.momentum = 0.0
+            self.last_direction = 0
+            self.direction_timer = 0.0
+            self.prev_outside = outside
+            self.anchor_locked = False
+
+            # geometric mapping (non-linear)
+            t = max(0.0, min(raw_distance / max_radius if max_radius > 0 else 0.0, 1.0))
+            self.true_seconds = float(self.inner_scale_seconds) * (t ** 1.4)
+            return int(self.true_seconds)
+
+        # --- OUTSIDE: momentum-driven, anchored
+        # lock anchor the first time we go outside
+        if not self.anchor_locked:
+            # either snap to anchor_seconds, or ensure baseline not below anchor
+            self.true_seconds = max(self.true_seconds, float(self.anchor_seconds))
+            self.anchor_locked = True
+            # don't reset prev_outside here — keep it to measure delta this frame
+
+        # accumulate outside time (patience)
+        self.outside_time += dt
+
+        # intent detection
+        delta = outside - self.prev_outside
+        self.prev_outside = outside
+
         raw_direction = 0
         if delta > self.threshold:
             raw_direction = 1
         elif delta < -self.threshold:
             raw_direction = -1
-            
-        # HARD STOP: kill opposing momentum #! why need to go the -1 way 2 times in a row to stop
+
+        # hard stop: opposing momentum kills momentum immediately
         if raw_direction != 0 and self.momentum != 0:
             if raw_direction != int(math.copysign(1, self.momentum)):
-                self.momentum = 0
+                self.momentum = 0.0
                 self.last_direction = raw_direction
-                self.direction_timer = 0
+                self.direction_timer = 0.0
 
-        if self.last_direction == 0 and abs(raw_direction) == 1:  # newest workable direction
+        # direction hysteresis
+        if self.last_direction == 0 and abs(raw_direction) == 1:
             self.last_direction = raw_direction
-            self.direction_timer = 0
+            self.direction_timer = 0.0
             effective_direction = self.last_direction
-        elif raw_direction == self.last_direction or raw_direction == 0:  # last direction is the same as the current direction, or no raw direction
+        elif raw_direction == self.last_direction or raw_direction == 0:
             effective_direction = self.last_direction
         else:
-            # direction changed, start wait
-            self.direction_timer += dt #! if assigned, need to jam everything else
+            # direction changed; wait briefly
+            self.direction_timer += dt
             if self.direction_timer >= self.direction_delay:
-                # ok, user really mean it
-                self.direction_timer = 0
+                self.direction_timer = 0.0
                 self.last_direction = raw_direction
                 effective_direction = self.last_direction
             else:
-                # still hessitating
                 effective_direction = 0
-        
-        # smooth curves mmm
-        distance_term = outside ** 1.2
-        time_term = self.outside_time ** 1.3
-        
-        # how fast time moves: direction * (Base speed + distance influence + patience influence), time always moves by 1 second outside dial
+
+        # smooth factors
+        distance_term = max(0.0, outside) ** 1.2
+        time_term = (self.outside_time) ** 1.3
+
+        # acceleration rules
         if effective_direction == 0:
-            # hold and coast with same less momentum over time
             self.momentum *= self.decay
-            
-            # snap momentum to zero
-            if effective_direction == 0 and abs(self.momentum) < 0.01:
-                self.momentum = 0
-        elif effective_direction == -1:
-            # pull-back, stop momentum and go into hessitation
-            acceleration = effective_direction * (1 + distance_term * 0.02 + time_term * 3)
-            self.momentum += acceleration
-
+            if abs(self.momentum) < 0.01:
+                self.momentum = 0.0
         else:
-            # push any direction after that = accelerate that direction
-            acceleration = effective_direction * (1 + distance_term * 0.02 + time_term * 3) # direction * speed
+            acceleration = effective_direction * (1.0 + distance_term * 0.02 + time_term * 3.0)
             self.momentum += acceleration
 
-        print(self.momentum)
-        # convert direction and wait to true time
-        self.true_seconds += self.momentum * dt * 100
-        self.true_seconds = max(0, min(self.true_seconds, self.max_seconds)) # never < 0, never more than max_seconds
+        # integrate momentum into seconds
+        # scale factor 100 is preserved from your original code
+        self.true_seconds += self.momentum * dt * 100.0
+
+        # clamp to allowed range
+        self.true_seconds = max(0.0, min(self.true_seconds, float(self.max_seconds)))
         return int(self.true_seconds)
