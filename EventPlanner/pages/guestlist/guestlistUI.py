@@ -103,7 +103,7 @@ class GuestListUI(CTkFrame):
         ).pack()
 
         # initialize count
-        self.refresh_guest_count(0)
+        self.refresh_guest_count()
         
     def go_back(self):
         if not self.back_target:
@@ -130,7 +130,7 @@ class GuestListUI(CTkFrame):
             )
             messagebox.showinfo("Guest Added", f"{guest.name} added.")
             self.update_status("Guest added.")
-            self.refresh_guest_count(count)
+            self.refresh_guest_count()
             self.clear_form()
 
         except Exception as e:
@@ -161,7 +161,7 @@ class GuestListUI(CTkFrame):
         try:
             guest, count = self.controller.remove_guest(choice)
             messagebox.showinfo("Guest Removed", f"{guest.name} removed.")
-            self.refresh_guest_count(count)
+            self.refresh_guest_count()
             self.update_status("Guest removed.")
         except Exception as e:
             self.update_status(str(e))
@@ -181,3 +181,7 @@ class GuestListUI(CTkFrame):
 
     def update_status(self, message):
         self.status_label.configure(text=message)
+
+    def refresh_guest_count(self):
+        count = self.controller.count_all()
+        self.guest_count_label.configure(text=f"Total Guests: {count}")

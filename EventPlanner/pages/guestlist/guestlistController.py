@@ -28,3 +28,6 @@ class GuestController:
                 return g, len(guests)
 
         raise LookupError("Guest not found")
+    
+    def count_all(self):
+        return self.service.count_all()
