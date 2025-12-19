@@ -30,13 +30,12 @@ from pages.countdown.countdownService     import CountdownService
 from pages.countdown.countdownController  import CountdownController
 from pages.countdown.countdownUI          import CountdownUI
 
-countdown_service = CountdownService()
-countdown_controller = CountdownController(countdown_service)
-
-
-
 def show_frame(frame, splash_key=None):
     frame.tkraise()
+
+    # refresh stuff in dashboard
+    if hasattr(frame, "refresh") and callable(frame.refresh):
+      frame.refresh()
 
     if splash_key and splash_key in SPLASHES:
       if not splash_state.has_seen(splash_key):
@@ -116,48 +115,37 @@ root.rowconfigure(0, weight=1)
 root.columnconfigure(0, weight=0)
 root.columnconfigure(1, weight=1)
 
-
-# dashboard page
-dashboard_controller = DashboardController(
-  countdown_service=CountdownService(), 
-  budget_service=BudgetService(), 
-  tasks_service=TaskServices(), 
-  guestlist_service=GuestListService()
-  )
-dashboard = DashboardUI(root, controller=dashboard_controller) 
-
-# guest manager page 
-guest_controller = GuestController(
-  GuestListService(file_path=os.path.join(BASE_DIR, "pages", "guestlist", "guests.txt")))
-guest_menu = GuestListUI(root, controller=guest_controller, back_target=dashboard)
-
-# tasks page 
-task_controller = TaskController(TaskServices(file_path=os.path.join(BASE_DIR, "pages", "tasks", "tasks.json"))) 
-task_menu = TaskUI(root, controller=task_controller, back_target=dashboard) 
-
-# budget page 
-budget_controller = BudgetController(BudgetService()) 
-budget_menu = BudgetUI(root, controller=budget_controller, back_target=dashboard)
-
-# countdown (ONE instance only)
 countdown_service = CountdownService()
 countdown_controller = CountdownController(countdown_service)
 
+task_service = TaskServices(file_path=os.path.join(BASE_DIR, "pages", "tasks", "tasks.json"), countdown_service=countdown_service)
+task_controller = TaskController(task_service)
+
+budget_service = BudgetService()
+budget_controller = BudgetController(budget_service)
+
+guestlist_service = GuestListService(file_path=os.path.join(BASE_DIR, "pages", "guestlist", "guests.json"))
+guestlist_controller = GuestController(guestlist_service)
+
+# dashboard page
+dashboard_controller = DashboardController(
+  countdown_service=countdown_service, 
+  budget_service=budget_service, 
+  tasks_service=task_service, 
+  guestlist_service=guestlist_service
+  )
+dashboard = DashboardUI(root, controller=dashboard_controller) 
 
 # countdown page
-countdown_controller = CountdownController(CountdownService())
 countdown_menu = CountdownUI(root, controller=countdown_controller, back_target=dashboard, splash_key="countdown")
 
 # tasks page
-task_controller = TaskController(TaskServices(file_path=os.path.join(BASE_DIR, "pages", "tasks", "tasks.json")))
 task_menu = TaskUI(root, controller=task_controller, back_target=dashboard, splash_key="tasks")
 
 # budget page
-budget_controller = BudgetController(BudgetService())
 budget_menu = BudgetUI(root, controller=budget_controller, back_target=dashboard, splash_key="budget")
 
 # guest manager page
-guestlist_controller = GuestController(GuestListService(file_path=os.path.join(BASE_DIR, "pages", "guestlist", "guests.txt")))
 guestlist_menu = GuestListUI(root, controller=guestlist_controller, back_target=dashboard, splash_key="guestlist")
 
 # UI -> controller -> service <- model
@@ -183,6 +171,7 @@ Menu = [
 # side bar selector
 sidebar = SidebarUI(root, menu_items=Menu, splash_callback=lambda:show_app_splash(root), show_callback=show_frame)
 sidebar.grid(row=0, column=0, sticky="ns")
+root.sidebar = sidebar
 
 # show dashboard first
 show_frame(dashboard)

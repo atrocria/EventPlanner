@@ -81,9 +81,45 @@ class GuestListUI(CTkFrame):
         # status label — kept as you had it (attached to parent with place)
         self.status_label = ctk.CTkLabel(parent, text="Ready.", font=("Segoe UI", 16))
         self.status_label.place(relx=0.5, rely=0.98, anchor="center")
+        
+        bottom_bar = ctk.CTkFrame(self, fg_color="transparent")
+        bottom_bar.grid(row=99, column=0, columnspan=3, pady=(20, 10), sticky="s")
+
+        # make sure the layout can push content up
+        self.grid_rowconfigure(99, weight=1)
+
+        ctk.CTkButton(
+            bottom_bar,
+            text="← Back to Dashboard",
+            command=self.go_back,
+            width=180,
+            height=38,
+            fg_color="transparent",
+            hover_color="#3a3a3a",
+            text_color="#bbbbbb",
+            border_width=1,
+            border_color="#555555",
+            corner_radius=10
+        ).pack()
 
         # initialize count
         self.refresh_guest_count(0)
+        
+    def go_back(self):
+        if not self.back_target:
+            return
+
+        # show dashboard
+        self.back_target.tkraise()
+
+        # sync sidebar highlight
+        root = self.winfo_toplevel()
+        if hasattr(root, "sidebar"):
+            root.sidebar.select_by_target(self.back_target)
+
+        # refresh dashboard if needed
+        if hasattr(self.back_target, "refresh"):
+            self.back_target.refresh()
 
     # ---------- UI Actions ----------
     def add_guest(self):
@@ -103,7 +139,7 @@ class GuestListUI(CTkFrame):
     def show_guests(self):
         # use the controller method that returns the list of guests
         # original code had get_guest vs get_guests; prefer get_guests for consistency
-        guests = self.controller.get_guests() if hasattr(self.controller, "get_guests") else self.controller.get_guest()
+        guests = self.controller.get_guests() if hasattr(self.controller, "get_guests") else self.controller.get_guests()
         if not guests:
             self.update_status("No guests added yet.")
             return
@@ -112,7 +148,7 @@ class GuestListUI(CTkFrame):
         messagebox.showinfo("Guest List", f"Total Guests: {len(guests)}\n\n{text}")
 
     def remove_guest(self):
-        guests = self.controller.get_guests() if hasattr(self.controller, "get_guests") else self.controller.get_guest()
+        guests = self.controller.get_guests() if hasattr(self.controller, "get_guests") else self.controller.get_guests()
         if not guests:
             self.update_status("No guests to remove.")
             return
@@ -139,7 +175,7 @@ class GuestListUI(CTkFrame):
     def refresh_guest_count(self, count=None):
         if count is None:
             # prefer get_guests, fallback to get_guest if that's what controller exposes
-            guests = self.controller.get_guests() if hasattr(self.controller, "get_guests") else self.controller.get_guest()
+            guests = self.controller.get_guests() if hasattr(self.controller, "get_guests") else self.controller.get_guests()
             count = len(guests)
         self.guest_count_label.configure(text=f"Total Guests: {count}")
 

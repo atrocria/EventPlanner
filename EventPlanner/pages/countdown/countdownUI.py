@@ -76,7 +76,31 @@ class CountdownUI(CTkFrame):
         current_day = datetime.now().strftime("%A")
 
         # Title section
-        CTkLabel(self, text="Event Countdown", font=("Segoe UI", 24, "bold"), text_color="white").pack(pady=10)
+        # Header frame (title + info button)
+        header_frame = CTkFrame(self, fg_color="transparent")
+        header_frame.pack(pady=10, fill="x", padx=20)
+
+        header_frame.grid_columnconfigure(0, weight=1)
+        header_frame.grid_columnconfigure(1, weight=0)
+
+        CTkLabel(
+            header_frame,
+            text="Event Countdown",
+            font=("Segoe UI", 24, "bold"),
+            text_color="white"
+        ).grid(row=0, column=0, sticky="w")
+
+        CTkButton(
+            header_frame,
+            text="ⓘ",
+            text_color="white",
+            width=30,
+            height=30,
+            fg_color="#FFFFFF",
+            hover_color="#A8A8A8",
+            command=lambda: self.winfo_toplevel().show_page_splash(self.splash_key)
+        ).grid(row=0, column=1, sticky="e", padx=(10, 0))
+
         CTkLabel(self, text=current_date, font=("Segoe UI", 16), text_color="lightgray").pack()
         CTkLabel(self, text=current_day, font=("Segoe UI", 14), text_color="lightgray").pack(pady=(0, 20))
 
@@ -119,19 +143,65 @@ class CountdownUI(CTkFrame):
         if self.back_target:
             back_btn = CTkButton(
                 btn_frame,
-                text="Back",
-                command=self.back_target,
-                fg_color="#6c757d",
-                hover_color="#545b62",
-                width=150
+                text="← Back to Dashboard",
+                command=self.go_back,
+                width=180,
+                height=38,
+                fg_color="transparent",
+                hover_color="#3a3a3a",
+                text_color="#bbbbbb",
+                border_width=1,
+                border_color="#555555",
+                corner_radius=10
             )
-            back_btn.grid(row=0, column=1, padx=10)
+            back_btn.grid(row=1, column=0, padx=10, pady=10)
+
+    def go_back(self):
+        if not self.back_target:
+            return
+
+        # bring dashboard to front
+        self.back_target.tkraise()
+
+        # refresh dashboard data
+        if hasattr(self.back_target, "refresh"):
+            self.back_target.refresh()
+
+        # sync sidebar highlight
+        root = self.winfo_toplevel()
+        if hasattr(root, "sidebar"):
+            root.sidebar.select_by_target(self.back_target)
 
     # Timer Display Screen
     def build_timer_screen(self):
         """Build screen for displaying active countdown"""
         self.clear()
         self.configure(fg_color="black")
+        
+        # Header frame (event name + info button)
+        header_frame = CTkFrame(self, fg_color="transparent")
+        header_frame.pack(fill="x", padx=20, pady=(10, 0))
+
+        header_frame.grid_columnconfigure(0, weight=1)
+        header_frame.grid_columnconfigure(1, weight=0)
+
+        CTkLabel(
+            header_frame,
+            textvariable=self.event_name,
+            font=("Segoe UI", 24, "bold"),
+            text_color="white"
+        ).grid(row=0, column=0, sticky="w")
+
+        CTkButton(
+            header_frame,
+            text="ⓘ",
+            text_color="black",
+            width=30,
+            height=30,
+            fg_color="#FFFFFF",
+            hover_color="#A8A8A8",
+            command=lambda: self.winfo_toplevel().show_page_splash(self.splash_key)
+        ).grid(row=0, column=1, sticky="e", padx=(10, 0))
 
         # Event name display
         CTkLabel(
@@ -212,6 +282,22 @@ class CountdownUI(CTkFrame):
             font=("Segoe UI", 16, "bold")
         )
         reset_btn.pack(pady=30)
+        
+        if self.back_target:
+            back_btn = CTkButton(
+                self,
+                text="← Back to Dashboard",
+                command=self.go_back,
+                width=180,
+                height=38,
+                fg_color="transparent",
+                hover_color="#3a3a3a",
+                text_color="#bbbbbb",
+                border_width=1,
+                border_color="#555555",
+                corner_radius=10
+            )
+            back_btn.pack(pady=10)
 
         # Start real-time update loop
         self.start_update_loop()

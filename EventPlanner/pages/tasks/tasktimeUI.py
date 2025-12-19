@@ -1,7 +1,10 @@
-from customtkinter import CTkToplevel, CTkFrame, CTkButton, CTkLabel, CTkComboBox
-import tkinter as tk 
-import math
+import tkinter              as tk 
+from customtkinter          import CTkToplevel, CTkFrame, CTkButton, CTkLabel, CTkComboBox
+from .tasktime_statemachine import TimeDial
+from .taskController        import TaskController
 import datetime
+import time
+import math
 
 # converter pure logic
 def format_duration(seconds: int) -> str:
@@ -23,16 +26,33 @@ def format_duration(seconds: int) -> str:
     return " ".join(parts) if parts else "0s"
 
 class TaskTimeUI(CTkToplevel):
-    def __init__(self, parent, task, on_save, max_seconds=1200000000):
+    def __init__(self, parent, task, on_save, anchor_seconds, max_seconds=100000000):
         super().__init__(parent)
 
-        self.task = task
-        self.on_save = on_save
-        self.max_seconds = max_seconds
-        
         self.title("Set Time")
         self.geometry("600x600")
         self.resizable(False, False)
+        
+        self.last_tick = time.perf_counter()
+        self.raw_distance = 0
+        self.task = task
+        self.on_save = on_save
+        self.max_seconds = max_seconds
+        self.anchor_seconds = anchor_seconds
+        self.dial = TimeDial(
+            max_seconds=self.max_seconds,
+            anchor_seconds=  anchor_seconds,
+            inner_scale_seconds=180 * 24 * 3600 # half a year
+        )
+        self.last_time = datetime.datetime.now()
+        
+        now = datetime.datetime.now()
+        if task.due_at:
+            delta = task.due_at - now
+            self.selected_seconds = max(0, int(delta.total_seconds()))
+        else:
+            self.selected_seconds = 0
+        self.dial.true_seconds = self.selected_seconds
         
         # the task
         self.task_label = CTkLabel(
@@ -54,17 +74,13 @@ class TaskTimeUI(CTkToplevel):
         self.edge_padding = 20
         self.max_radius = min(self.center_x, self.center_y) - self.edge_padding
         
-        # over-bounds calculation
-        self.overflow_active = False
-        self.overflow_direction = 0 # +1 increase, -1 decrease
-        self.overflow_after_id = None
-        self.overflow_speed = 1.0   # momentum for increase
-        
         # snapback anim
         self.snap_animating = False
         self.snap_after_id = None
 
-        self.seconds = 0 # minute is distance
+        self.seconds = 0    # readonly result
+        self.base_seconds = 0   # what position means
+        self.overflow_seconds = 0   # momentum
         self.selected_seconds = 0
         self.previewing = False
         
@@ -113,7 +129,6 @@ class TaskTimeUI(CTkToplevel):
         )
         
         self.canvas.bind("<B1-Motion>", self.on_drag)
-        self.canvas.bind("<Button-1>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release) # begin snapback animation
         
         # date picker frame
@@ -167,62 +182,71 @@ class TaskTimeUI(CTkToplevel):
             pady=6
         )
 
+        self.start_loop()
         CTkButton(btns, text="Save", command=self.save).pack(side="left", padx = 8)
         CTkButton(btns, text="Cancel", command=self.destroy).pack(side="left", padx = 8)
         
+    def sync_date_from_seconds(self, seconds: int):
+        now = datetime.datetime.now()
+        future = now + datetime.timedelta(seconds=seconds)
+        
+        self.day_var.set(str(future.day))
+        self.month_var.set(str(future.month))
+        self.year_var.set(str(future.year))
+        
+    def start_loop(self):
+        self.last_tick = time.perf_counter()
+        self.tick()
+
+    def tick(self):
+        now = time.perf_counter()
+        dt = now - self.last_tick
+        self.last_tick = now
+        
+        # advance dial even when mouse is still
+        seconds = self.dial.update(
+            raw_distance=self.raw_distance,
+            max_radius=self.max_radius,
+            dt=dt
+        )
+        
+        if self.previewing:
+            self.seconds = seconds
+            self.update_tooltip()
+
+        # reflect time over
+        self.seconds = seconds
+        self.update_tooltip()
+        self.after(16, self.tick) # ~60fps
+    
     def on_drag(self, event):
-        # if holding again
+        # if holding again, stop snapback animation
         if self.snap_animating:
-            self.snap_animating = False
-            if self.snap_after_id:
+            self.snap_animating = False 
+            
+            if self.snap_after_id:                      # stop animating snapback
                 self.after_cancel(self.snap_after_id)
                 self.snap_after_id = None
-        self.previewing = True
+        self.previewing = True                          # dragging mode = true
     
         # non linear scaling, gestimer inspired
+        # mag x and mag y + hypotenuse line mmm
         dx = event.x - self.center_x
         dy = event.y - self.center_y
-        distance = math.hypot(dx, dy) # triangle mmm
-
-        # clamp
-        if distance <= self.max_radius:
-            # normal mode
-            self.overflow_active = False
-            
-            # clamped unit 1
-            normalized = distance / self.max_radius
-            self.seconds = int(self.max_seconds * (normalized ** 1.4))
-            
-            # update ball position
-            self.handle_x = self.center_x + dx
-            self.handle_y = self.center_y + dy
-        else:
-            # overflow mode
-            self.overflow_active = True
-            
-            # direction: in vs out
-            dot = dx * (self.handle_x - self.center_x) + dy * (self.handle_y - self.center_y)
-            self.overflow_direction = 1 if dot > 0 else -1
-            
-            # clamp handle visually to edge
-            scale = self.max_radius / distance
-            self.handle_x = self.center_x + dx * scale
-            self.handle_y = self.center_y + dy * scale
-            
-            # overflow speed scaling #! maybe adjust with how long inside bounds?
-            excess = distance - self.max_radius
-            self.overflow_speed = min(50, 1 + excess * 0.05)
-            dx *= scale
-            dy *= scale
-            distance = self.max_radius
+        raw_distance = math.hypot(dx, dy) # triangle mmm
         
-
-        self.seconds = int(max(0, min(seconds, self.max_seconds)))
-
+        self.raw_distance = raw_distance
         
+        # lock ball position inside circle
+        clamped_distance = min(raw_distance, self.max_radius)
+        scale = clamped_distance / raw_distance if raw_distance > 0 else 0
+
+        self.handle_x = self.center_x + dx * scale
+        self.handle_y = self.center_y + dy * scale
+
         self.update_handle()
         self.update_tooltip()
-        
+    
     def update_handle(self):
         r = self.handle_radius
         
@@ -269,8 +293,12 @@ class TaskTimeUI(CTkToplevel):
         if self.snap_animating:
             return
         
+        self.overflow_active = False
+        self.overflow_after_id = None
         self.previewing = False         # dragging or nah
-        self.selected_seconds = self.seconds
+        self.selected_seconds = int(self.dial.true_seconds)
+        self.selected_seconds = int(self.dial.true_seconds)
+        self.sync_date_from_seconds(self.selected_seconds)
         
         self.snap_animating = True
         self.snap_step()
@@ -297,9 +325,6 @@ class TaskTimeUI(CTkToplevel):
         easing = 0.25
         self.handle_x += dx * easing
         self.handle_y += dy * easing
-        
-        normalized = distance / self.max_radius
-        self.seconds = int(self.max_seconds * (normalized ** 1.5))
 
         self.update_handle()
         self.update_tooltip()
@@ -307,16 +332,15 @@ class TaskTimeUI(CTkToplevel):
         # repeat
         self.snap_after_id = self.after(16, self.snap_step)
         
-    def save(self):
-        year = int(self.year_var.get())
-        month = int(self.month_var.get())
-        day = int(self.day_var.get())
-
-        base_date = datetime.datetime(year, month, day)
-
-        final_time = base_date + datetime.timedelta(
-            seconds=self.selected_seconds
+    def compute_seconds(self):
+        return min(
+            self.base_seconds + int(self.overflow_seconds),
+            self.max_seconds
         )
+        
+    def save(self):
+        now = datetime.datetime.now()
+        due_at = now + datetime.timedelta(seconds=self.selected_seconds)
 
-        self.on_save(final_time)
+        self.on_save(due_at)
         self.destroy()

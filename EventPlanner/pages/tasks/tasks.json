@@ -1,22 +1,23 @@
 [
     {
-        "id": "57699acbdfab43198461e3f9d9dfc57d",
+        "id": "b0970512cbff4489a765a869196a9350",
+        "text": "a task that is edited",
+        "done": false,
+        "order": 2,
+        "due_at": null
+    },
+    {
+        "id": "84332c4815e64f46b49d0c13ba778d25",
         "text": "done",
-        "done": true
+        "done": true,
+        "order": 0,
+        "due_at": null
     },
     {
-        "id": "d50aaff19abf4200bcb0feace758c083",
+        "id": "91b505016e094d77b5915c252bfb84fa",
         "text": "undone",
-        "done": false
-    },
-    {
-        "id": "86205ce9fddf48a8850c6dd3820d1d7a",
-        "text": "bulk",
-        "done": false
-    },
-    {
-        "id": "291030c7be2f4bf6a14f6f9c9db759bf",
-        "text": "bulk delete",
-        "done": false
+        "done": false,
+        "order": 1,
+        "due_at": null
     }
 ]

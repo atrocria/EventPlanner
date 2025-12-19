@@ -1,1 +1,7 @@
-{"total_seconds": 10, "end_time": "", "state": 0, "event_name": "My Event"}
+{
+  "days": 0,
+  "hours": 0,
+  "minutes": 0,
+  "seconds": 0,
+  "state": "IDLE"
+}

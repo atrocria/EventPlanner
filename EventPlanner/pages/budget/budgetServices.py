@@ -47,3 +47,9 @@ class BudgetService:
 
     def get_total(self):
         return sum(item.amount for item in self.items)
+
+    def count_items(self) -> int:
+        return len(self.items)
+
+    def has_items(self) -> bool:
+        return len(self.items) > 0

@@ -1,10 +1,10 @@
 [
     {
         "name": "test",
-        "amount": 1000.0
+        "rsvp": "Yes"
     },
     {
         "name": "test",
-        "amount": 1000.0
+        "rsvp": "No"
     }
 ]

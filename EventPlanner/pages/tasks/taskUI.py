@@ -1,4 +1,6 @@
+import tkinter          as tk
 import customtkinter    as ctk
+import datetime
 from customtkinter      import CTkFrame, CTkEntry, CTkButton, CTkLabel, CTkCheckBox, CTkScrollableFrame, CTkFont, BooleanVar
 from .taskController    import TaskController
 from .tasksModel        import TaskModel
@@ -6,17 +8,18 @@ from .tasktimeUI        import TaskTimeUI
 
 #TODO: due date, send button
 
-# refers to the individual task
 class TaskItem(CTkFrame):
-    def __init__(self, parent, task: TaskModel, on_delete, on_edited, on_toggled):
+    def __init__(self, parent, *, controller, task: TaskModel, on_delete, on_edited, on_toggled, sync_order):
         super().__init__(parent, fg_color="#202020", corner_radius=6)
         
         # task element consists: id, text, done_bool.
         # tasks can be deleted, edited, checked, and dynamically resized by changing of window size
+        self.controller = controller
         self.task = task
         self.on_delete = on_delete
         self.on_edited = on_edited
         self.on_toggled = on_toggled
+        self.sync_order = sync_order
         self.edit_entry = None
         self.resize_cooldown = None
         self.normal_bg = "#202020"
@@ -27,7 +30,6 @@ class TaskItem(CTkFrame):
         self.delete_var.trace_add("write", self.on_delete_toggle)
         self.delete_box = None
         
-        
         # config for each task which goes inside tasks_box
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
@@ -36,9 +38,14 @@ class TaskItem(CTkFrame):
         self.strike_font = CTkFont(family="Arial", size=15)
         self.strike_font.configure(overstrike=1)
 
-        self.label = CTkLabel(self, text=task.text, anchor="w", justify="left", wraplength=1200, font=self.normal_font)
+        self.label = CTkLabel(self, text=task.text, anchor="w", justify="left", wraplength=1200, font=self.normal_font, cursor="hand2")
         self.label.grid(row=0, column=1, sticky="ew", padx=10, pady=5)
         
+        # show due time if exists
+        if self.task.due_at:
+            due_str = self.task.due_at.strftime("%Y-%m-%d %H:%M")
+            self.label.configure(text=f"{self.task.text}\n⏱ {due_str}")
+
         # if the task is done, add strikethrough
         if task.done:
             self.label.configure(font=self.strike_font, text_color="gray70")
@@ -49,6 +56,13 @@ class TaskItem(CTkFrame):
         # double click to edit the tasks
         self.label.bind("<Double-Button-1>", self.start_edit)
         
+        self.drag_start_y = 0
+        self.dragging = False
+
+        self.label.bind("<ButtonPress-1>", self.start_drag)
+        self.label.bind("<B1-Motion>", self.on_drag)
+        self.label.bind("<ButtonRelease-1>", self.end_drag)
+        
         # checkbox button
         self.check_var = ctk.BooleanVar(value=task.done)
         self.check_box = CTkCheckBox(self, text=None, command=self.checked, variable=self.check_var, onvalue=True, offvalue=False, width=24)
@@ -57,6 +71,7 @@ class TaskItem(CTkFrame):
         # kabab button, yum view more stuff
         self.task_option = CTkButton(self, text="⋮", font=CTkFont("Helvetica", 25, "bold"), text_color="white", fg_color=self.normal_bg, hover_color="#101010", corner_radius=15, command=self.toggle_taskme)
         self.task_option.grid(row=0, column=2, sticky="e")
+        
         
         # task menu stats
         self.menu_open = False
@@ -92,6 +107,49 @@ class TaskItem(CTkFrame):
             anchor="w",
             command=self.open_time_ui
         ).pack(fill="x", padx=8, pady=4)
+
+    def start_drag(self, event):
+        # if in bulk delete mode, outta here
+        if self.check_box.cget("state") == "disabled":
+            return
+        
+        self.drag_start_y = event.y_root
+        self.dragging = True
+        self.lift()
+        
+    def on_drag(self, event):
+        if not self.dragging:
+            return
+
+        parent = self.master  # tasks_box
+        y = event.y_root
+
+        for widget in parent.winfo_children():
+            if widget == self:
+                continue
+            wy = widget.winfo_rooty()
+            wh = widget.winfo_height()
+
+            if wy < y < wy + wh:
+                self._swap_with(widget)
+                break
+            
+    def _swap_with(self, other):
+        my_row = int(self.grid_info()["row"])
+        other_row = int(other.grid_info()["row"])
+
+        if my_row == other_row:
+            return
+
+        self.grid(row=other_row)
+        other.grid(row=my_row)
+
+    def end_drag(self, event):
+        if not self.dragging:
+            return
+
+        self.dragging = False
+        self.sync_order()
 
     # menu toggle
     def toggle_taskme(self):
@@ -130,11 +188,17 @@ class TaskItem(CTkFrame):
         TaskTimeUI(
             parent=self.winfo_toplevel(),
             task=self.task,
-            on_save=self.on_time_set
+            on_save=self.on_time_set,
+            anchor_seconds=self.controller.get_anchor_seconds()
         )
         
-    def on_time_set(self, seconds):
-        print(f"Task {self.task.id} → {seconds} s")
+    def on_time_set(self, due_at: datetime.datetime): #! controller persist due_at
+        self.task.due_at = due_at
+        print(f"Task {self.task.id} → {self.task.due_at}")
+        
+        if isinstance(self.task.due_at, datetime.datetime):
+            due_str = self.task.due_at.strftime("%Y-%m-%d %H:%M")
+            self.label.configure(text=f"{self.task.text}\n⏱ {due_str}")
         self.on_edited(self.task.id, self.task.text)
     
     # check if in cooldown, go to apply resize function
@@ -303,8 +367,11 @@ class TaskUI(CTkFrame):
 
         # BIG TITLE
         self.header = CTkFrame(self, fg_color="transparent")
-        self.header.grid(row=0, column=0, sticky="ew", padx=50, pady=(20, 0))
-        self.header.grid_columnconfigure((0,1,2), weight=1)
+        self.header.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 0))
+        self.header.grid_columnconfigure(0, weight=0)  # title + info
+        self.header.grid_columnconfigure(1, weight=1)  # spacer
+        self.header.grid_columnconfigure(2, weight=0)  # bulk delete
+        self.header.grid_columnconfigure(3, weight=0)  # info button
 
         self.title_label = CTkLabel(
             self.header,
@@ -313,36 +380,73 @@ class TaskUI(CTkFrame):
             anchor="w"
         )
         self.title_label.grid(row=0, column=0, sticky="w")
+        
+        self.tasks_info_label = CTkLabel(
+            self.header,
+            text="",
+            text_color="gray70",
+            font=CTkFont("Helvetica", 14),
+            anchor="w"
+        )
+        self.tasks_info_label.grid(row=1, column=0, sticky="w", pady=(4, 0))
 
         # info button
         CTkButton(
-            self,
+            self.header,
             text="ⓘ",
             width=30,
             command=lambda: self.winfo_toplevel().show_page_splash(self.splash_key)
-        ).grid(row=0, column=1, sticky="e", padx=(10,0))
+        ).grid(row=0, column=3, rowspan=2, sticky="e", padx=(10, 0))
         
         self.bulk_delete_button = CTkButton(
             self.header,
             text="🗑 Bulk Delete",
             width=50,
-            corner_radius=12,
-            fg_color="#ff6c6c",
+            corner_radius=10,
+            fg_color="#2D1616",
+            hover_color="#D74E4E",
+            text_color="#bbbbbb",
+            border_width=1,
+            border_color="#ff6c6c",
             command=self.toggle_bulk_delete_mode
         )
-        self.bulk_delete_button.grid(row=0, column=2, sticky="e")
+        self.bulk_delete_button.grid(row=0, column=2, rowspan=2, sticky="e")
 
         # --- task box area ---
-        self.tasks_box = CTkScrollableFrame(self, fg_color="#282828", corner_radius=10)
-        self.tasks_box.grid(row=1, column=0, sticky="nsew", padx=50, pady=30)
+        self.task_and_entry = CTkFrame(
+            self,
+            fg_color="#282828",
+            corner_radius=12
+        )
+        self.task_and_entry.grid(row=1, column=0, sticky="nsew", padx=20, pady=20)
+
+        self.task_and_entry.grid_columnconfigure(0, weight=1)
+        self.task_and_entry.grid_rowconfigure(0, weight=1)  # tasks
+        self.task_and_entry.grid_rowconfigure(1, weight=0)  # entry
+
+        self.tasks_box = CTkScrollableFrame(
+            self.task_and_entry,
+            fg_color="transparent",
+            corner_radius=0
+        )
+        self.tasks_box.grid(row=0, column=0, sticky="nsew", padx=12, pady=(12, 6))
         self.tasks_box.grid_columnconfigure(0, weight=1)
 
         # entry for posts, pressing enter post the tasks to top
-        self.task_entry = CTkFrame(self, fg_color="transparent")
-        self.task_entry.grid(row=2, column=0, sticky="ew", padx=10, pady=(0, 10))
+        self.task_entry = CTkFrame(self.task_and_entry, fg_color="transparent")
+        self.task_entry.grid(row=1, column=0, sticky="ew", padx=12, pady=(6, 12))
+
         self.task_entry.grid_columnconfigure(0, weight=1)
         self.task_entry.grid_columnconfigure(1, weight=0)
-        self.entry = CTkEntry(self.task_entry, placeholder_text="psst.. add your task here")
+
+        self.entry = CTkEntry( #! change
+            self.task_entry, 
+            fg_color="transparent",
+            text_color="#bbbbbb",
+            border_width=1,
+            border_color="#555555", 
+            placeholder_text="psst.. add your task here"
+        )
         self.entry.grid(row=0, column=0, sticky="ew")
         self.entry.bind("<Return>", self.on_enter_post)
         
@@ -352,28 +456,50 @@ class TaskUI(CTkFrame):
         # back button (required)
         self.back_button = CTkButton(
             self,
-            text="Back",
-            width=25,
-            command=lambda: show_frame(self.back_target)
+            text="← Back to Dashboard",
+            command=self.go_back,
+            width=180,
+            height=38,
+            fg_color="transparent",
+            hover_color="#3a3a3a",
+            text_color="#bbbbbb",
+            border_width=1,
+            border_color="#555555",
+            corner_radius=10
         )
         self.back_button.grid(row=3, column=0, sticky="ew", padx=10, pady=(0, 10))
         
         for task in self.controller.get_task():
             self.add_task_widget(task)
             
+        self.update_tasks_display()
+            
+    def go_back(self):
+        self.back_target.tkraise()
+
+        root = self.winfo_toplevel()
+        if hasattr(root, "sidebar"):
+            root.sidebar.select_by_target(self.back_target)
+
+        if hasattr(self.back_target, "refresh"):
+            self.back_target.refresh()
+
     # tell controller check th f up
     def on_task_toggled(self, task_id):
         self.controller.toggle_task(task_id)
+        self.update_tasks_display()
         
     # make a task, tell taskItem to deal with it, and store it in a dict
     def add_task_widget(self, task: TaskModel):
         index = len(self.framedTasks)
         item = TaskItem(
             self.tasks_box,
-            task,
+            task=task,
+            controller=self.controller,
             on_delete=self.on_task_deletion,
             on_edited=self.on_task_edit,
             on_toggled=self.on_task_toggled,
+            sync_order=self.sync_task_order
         )
         item.grid(row=index, column=0, sticky="ew", padx=5, pady=5)
         self.framedTasks[task.id] = item
@@ -385,6 +511,7 @@ class TaskUI(CTkFrame):
         
         task = self.controller.add_task(text)
         self.add_task_widget(task)
+        self.update_tasks_display()
             
         self.entry.delete(0, "end")
         
@@ -393,6 +520,7 @@ class TaskUI(CTkFrame):
         widget = self.framedTasks.pop(task_id)
         widget.destroy()
         self._regrid_tasks()
+        self.update_tasks_display()
 
     def update_bulk_delete_button(self):
         if not self.bulk_delete_mode:
@@ -449,6 +577,7 @@ class TaskUI(CTkFrame):
                 widget.destroy()
         
         self._regrid_tasks()
+        self.update_tasks_display()
         
         # exit delete mode and delete duty
         self.bulk_delete_cancel()
@@ -464,11 +593,23 @@ class TaskUI(CTkFrame):
     # tell controller, see TaskItem
     def on_task_edit(self, task_id, new_text):
         self.controller.update_task(task_id, new_text)
+        
+    def sync_task_order(self):
+        ordered = sorted(
+            self.framedTasks.items(),
+            key=lambda kv: kv[1].grid_info()["row"]
+        )
+        ordered_ids = [task_id for task_id, _ in ordered]
+        self.controller.reorder_tasks(ordered_ids)
 
     # re-configure task alignment
     def _regrid_tasks(self):
-        for row, task_id in enumerate(self.framedTasks):
-            self.framedTasks[task_id].grid_configure(row=row)
+        ordered = sorted(
+            self.framedTasks.items(),
+            key=lambda kv: kv[1].grid_info()["row"]
+        )
+        for row, (task_id, widget) in enumerate(ordered):
+            widget.grid_configure(row=row)
 
     # readonly
     def disable_task_input(self):
@@ -476,7 +617,7 @@ class TaskUI(CTkFrame):
         self.post_button.configure(state="disabled", fg_color="#3a1f1f")
 
     def enable_task_input(self):
-        self.entry.configure(state="normal", placeholder_text="psst.. add your task here", fg_color="#343638")
+        self.entry.configure(state="normal", fg_color="#343638")
         self.post_button.configure(state="normal", fg_color="#D6D6D6")
 
     # escape button logic
@@ -485,6 +626,18 @@ class TaskUI(CTkFrame):
             self.bulk_delete_cancel()
             self.update_bulk_delete_button()
             return "break"
+        
+    def update_tasks_display(self):
+        info = self.controller.get_tasks_info()
+
+        if not info["has_tasks"]:
+            self.tasks_info_label.configure(text="No tasks yet")
+            return
+
+        self.tasks_info_label.configure(
+            text=f"{info['pending']} pending • {info['completed']} done"
+        )
+
 
 def show_frame(frame):
     frame.tkraise()
