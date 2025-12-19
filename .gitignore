@@ -1,1 +1,18 @@
+# --- Python noise ---
+__pycache__/
 *.pyc
+*.pyo
+
+# --- Virtual environments ---
+.venv/
+venv/
+
+# --- IDE junk (only what actually appears in your tree) ---
+.idea/
+
+# --- App-specific runtime junk ---
+.first_launch
+
+# --- OS junk (minimal, not the whole encyclopedia) ---
+.DS_Store
+Thumbs.db
