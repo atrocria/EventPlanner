@@ -47,40 +47,13 @@ CustomTkinter (modern Tkinter UI)
 
 Tkinter
 
-Pillow (for icons)
-
-Optional:
-
-PyInstaller (EXE builds)
-
-Docker (containerized execution)
-
-Project Structure (Simplified)
-EventPlanner/
-│
-├── app.py
-├── pages/
-│   ├── dashboardUI.py
-│   ├── taskUI.py
-│   ├── taskController.py
-│   ├── taskServices.py
-│   ├── budgetUI.py
-│   ├── guestlistUI.py
-│   ├── countdownUI.py
-│   └── ...
-│
-├── icons/
-├── theme.json
-└── requirements.txt
-
-
 Each feature module follows this pattern:
 
 UI → Controller → Service → Model
 
 Setup Instructions (Local)
 1️⃣ Clone the repository
-git clone <repository-url>
+git clone https://github.com/atrocria/EventPlanner
 cd EventPlanner
 
 2️⃣ Create a virtual environment
@@ -104,7 +77,7 @@ pip install -r requirements.txt
 
 If requirements.txt is missing, install manually:
 
-pip install customtkinter pillow
+pip install customtkinter
 
 4️⃣ Run the application
 python app.py
