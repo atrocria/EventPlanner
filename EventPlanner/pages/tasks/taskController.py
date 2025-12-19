@@ -43,3 +43,6 @@ class TaskController:
     
     def mark_task_notified(self, task_id: str):
         self.service.mark_task_notified(task_id)
+        
+    def clear_task_due(self, task_id: str):
+        self.service.clear_due_by_id(task_id)

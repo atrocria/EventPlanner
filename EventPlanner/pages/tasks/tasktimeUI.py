@@ -30,7 +30,7 @@ DAY = 86400
 YEAR = 365 * DAY
 
 class TaskTimeUI(CTkToplevel):
-    def __init__(self, parent, task, on_save, anchor_seconds, max_seconds=100000000):
+    def __init__(self, parent, task, on_save, anchor_seconds):
         super().__init__(parent)
 
         self.title("Set Time")
@@ -41,10 +41,8 @@ class TaskTimeUI(CTkToplevel):
         self.raw_distance = 0
         self.task = task
         self.on_save = on_save
-        self.max_seconds = max_seconds
         self.anchor_seconds = anchor_seconds
         self.dial = TimeDial(
-            max_seconds=self.max_seconds,
             anchor_seconds=  anchor_seconds,
         )
         self.last_time = datetime.datetime.now()
@@ -109,7 +107,7 @@ class TaskTimeUI(CTkToplevel):
         self.canvas.pack(pady=10)
         
         # unhide per hour
-        self.hour_ring = self.canvas.create_oval(
+        self.milestone_ring = self.canvas.create_oval(
             self.center_x - self.max_radius,
             self.center_y - self.max_radius,
             self.center_x + self.max_radius,
@@ -125,7 +123,7 @@ class TaskTimeUI(CTkToplevel):
             self.center_y - self.origin_radius,
             self.center_x + self.origin_radius,
             self.center_y + self.origin_radius,
-            fill="#666666",   # neutral gray
+            fill="#FFFFFF",
             outline=""
         )
         
@@ -139,7 +137,7 @@ class TaskTimeUI(CTkToplevel):
             self.handle_x,
             self.handle_y,
             width=5,
-            fill="#ff6c6c"
+            fill="#ffffff"
         )
         self.handle = self.canvas.create_oval( # the ball
             self.handle_x - self.handle_radius,
@@ -372,7 +370,7 @@ class TaskTimeUI(CTkToplevel):
     def update_time_ring(self):
         result = self.get_active_milestone(self.seconds)
         if result == (None, None):
-            self.canvas.itemconfigure(self.hour_ring, state="hidden")
+            self.canvas.itemconfigure(self.milestone_ring, state="hidden")
             return
 
         start, end = result
@@ -381,18 +379,18 @@ class TaskTimeUI(CTkToplevel):
         radius = self.max_radius * (1.0 - fade)
 
         if radius <= 2:
-            self.canvas.itemconfigure(self.hour_ring, state="hidden")
+            self.canvas.itemconfigure(self.milestone_ring, state="hidden")
             return
 
         self.canvas.coords(
-            self.hour_ring,
+            self.milestone_ring,
             self.center_x - radius,
             self.center_y - radius,
             self.center_x + radius,
             self.center_y + radius
         )
 
-        self.canvas.itemconfigure(self.hour_ring, state="normal")
+        self.canvas.itemconfigure(self.milestone_ring, state="normal")
 
     def get_active_milestone(self, seconds):
         if seconds < HOUR:
@@ -411,10 +409,10 @@ class TaskTimeUI(CTkToplevel):
     
     def pulse_ring(self, step=0):
         if step > 8:
-            self.canvas.itemconfigure(self.hour_ring, width=3)
+            self.canvas.itemconfigure(self.milestone_ring, width=3)
             return
 
-        self.canvas.itemconfigure(self.hour_ring, width=3 + step)
+        self.canvas.itemconfigure(self.milestone_ring, width=3 + step)
         self.after(30, lambda: self.pulse_ring(step + 1))
 
     def save(self):

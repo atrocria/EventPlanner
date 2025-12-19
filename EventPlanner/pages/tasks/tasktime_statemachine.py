@@ -1,5 +1,4 @@
-import math
-
+# over-engineered time dial
 class TimeDial:
     """
     Time dial with two regimes:
@@ -7,11 +6,9 @@ class TimeDial:
       - outside circle: momentum-driven motion starting from anchor_seconds
 
     Constructor:
-        TimeDial(max_seconds: int,
-                 anchor_seconds: int,)
+        TimeDial(anchor_seconds: int)
     """
-    def __init__(self, max_seconds: int, anchor_seconds: int):
-        self.max_seconds = int(max_seconds)
+    def __init__(self, anchor_seconds: int):
         self.anchor_seconds = int(anchor_seconds) if anchor_seconds is not None else int(360 * 24 * 3600)
 
         self.true_seconds = 0.0
@@ -30,6 +27,12 @@ class TimeDial:
 
         self.prev_outside = 0.0
         self.anchor_locked = False   # becomes True once user first crosses outside boundary
+        
+        self.milestones = [
+            3600,
+            86400,
+            365 * 86400
+        ]
 
     def update(self, raw_distance: float, max_radius: float, dt: float) -> int:
         """
@@ -158,10 +161,17 @@ class TimeDial:
         self.true_seconds += self.momentum * dt * 100.0
 
         # clamp to allowed range
-        self.true_seconds = max(0.0, min(self.true_seconds, float(self.max_seconds)))
+        self.true_seconds = max(0.0, min(self.true_seconds, float(self.anchor_seconds)))
+        
+        for m in self.milestones:
+            if abs(self.true_seconds - m) < m * 0.015:
+                self.true_seconds = m
+                self.momentum *= 0.4
+                break
         
         if self.true_seconds >= HOUR:
             # round to whole minutes
             return int(self.true_seconds // 60 * 60)
         else:
             return int(self.true_seconds)
+        

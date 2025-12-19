@@ -97,8 +97,16 @@ class TaskServices():
             return
         
         task.notified = True
-        self.save() #! self.update task?
+        self.save()
         
+    def clear_due_by_id(self, task_id: str):
+        task = self.get_by_id(task_id)
+        if not task:
+            return
+
+        task.due_at = None
+        self.save()  # real persistence happens here
+
 class TaskNotificationService:
     def __init__(self, controller, on_notify):
         self.controller = controller
@@ -108,6 +116,18 @@ class TaskNotificationService:
         now = datetime.datetime.now()
 
         for task in self.controller.get_task():
-            if task.due_at and not task.notified and now >= task.due_at:
+            # don't notify if task is completed
+            if task.done:
+                continue
+            
+            # no due date
+            if not task.due_at:
+                continue
+            
+            # already notified
+            if task.notified:
+                continue
+            
+            if now >= task.due_at:
                 self.controller.mark_task_notified(task.id)
                 self.on_notify(task)

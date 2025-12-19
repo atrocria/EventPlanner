@@ -1,13 +1,10 @@
-import tkinter          as tk
-import customtkinter    as ctk
 import datetime
+import customtkinter    as ctk
 from customtkinter      import CTkFrame, CTkEntry, CTkButton, CTkLabel, CTkCheckBox, CTkScrollableFrame, CTkFont, BooleanVar
 from .taskController    import TaskController
 from .tasksServices     import TaskNotificationService
 from .tasksModel        import TaskModel
 from .tasktimeUI        import TaskTimeUI
-
-#TODO: due date, send button
 
 class TaskItem(CTkFrame):
     def __init__(self, parent, *, controller, task: TaskModel, on_delete, on_edited, on_toggled, sync_order):
@@ -69,10 +66,9 @@ class TaskItem(CTkFrame):
         self.check_box = CTkCheckBox(self, text=None, command=self.checked, variable=self.check_var, onvalue=True, offvalue=False, width=24)
         self.check_box.grid(row=0, column=0, padx=5, pady=5)
 
-        # kabab button, yum view more stuff
+        # kebab button, yum view more stuff
         self.task_option = CTkButton(self, text="⋮", font=CTkFont("Helvetica", 25, "bold"), text_color="white", fg_color=self.normal_bg, hover_color="#101010", corner_radius=15, command=self.toggle_taskme)
         self.task_option.grid(row=0, column=2, sticky="e")
-        
         
         # task menu stats
         self.menu_open = False
@@ -88,26 +84,7 @@ class TaskItem(CTkFrame):
             border_color="#444444"
         )
         
-        CTkButton(
-            self.menu_frame,
-            text="🗑 Delete",
-            anchor="w",
-            command=self.confirm_delete
-        ).pack(fill="x", padx=8, pady=4)
-
-        CTkButton(
-            self.menu_frame,
-            text="✏ Edit",
-            anchor="w",
-            command=self.start_edit
-        ).pack(fill="x", padx=8, pady=4)
-
-        CTkButton(
-            self.menu_frame,
-            text="⏱ Set Time",
-            anchor="w",
-            command=self.open_time_ui
-        ).pack(fill="x", padx=8, pady=4)
+        self.build_menu()
 
     def start_drag(self, event):
         # if in bulk delete mode, outta here
@@ -169,7 +146,7 @@ class TaskItem(CTkFrame):
         ty = self.winfo_toplevel().winfo_rooty()
 
         self.menu_frame.place(
-            x=bx - tx - 120,
+            x=bx - tx - 20,
             y=by - ty + bh
         )
 
@@ -193,15 +170,95 @@ class TaskItem(CTkFrame):
             anchor_seconds=self.controller.get_anchor_seconds()
         )
         
-    def on_time_set(self, due_at: datetime.datetime): #! controller persist due_at
+    def on_time_set(self, due_at: datetime.datetime):
         self.task.due_at = due_at
         print(f"Task {self.task.id} → {self.task.due_at}")
         
         if isinstance(self.task.due_at, datetime.datetime):
             due_str = self.task.due_at.strftime("%Y-%m-%d %H:%M")
             self.label.configure(text=f"{self.task.text}\n⏱ {due_str}")
+        else:
+            self.label.configure(text=self.task.text)
         self.on_edited(self.task.id, self.task.text)
-    
+        
+        # rebuild
+        self.build_menu()
+        
+    def clear_time(self):
+        if not self.task.due_at:
+            return  # nothing to clear, nothing to do
+
+        self.menu_frame.place_forget()
+        self.menu_open = False
+
+        self.controller.clear_task_due(self.task.id)
+
+        self.task.due_at = None
+        self.label.configure(text=self.task.text)
+
+        if self.clear_time_btn:
+            self.clear_time_btn.destroy()
+            self.clear_time_btn = None
+            
+        self.build_menu()
+            
+    def build_menu(self):
+        # wipe old menu
+        for widget in self.menu_frame.winfo_children():
+            widget.destroy()
+
+        CTkButton(
+            self.menu_frame,
+            text="🗑 Delete",
+            text_color="white",
+            fg_color="#272727",
+            border_width=1,
+            border_color="#555555",
+            anchor="w",
+            command=self.confirm_delete
+        ).pack(fill="x", padx=8, pady=4)
+
+        CTkButton(
+            self.menu_frame,
+            text="✏ Edit",
+            text_color="white",
+            fg_color="#272727",
+            border_width=1,
+            border_color="#555555",
+            anchor="w",
+            command=self.start_edit
+        ).pack(fill="x", padx=8, pady=4)
+
+        time_row = CTkFrame(self.menu_frame, fg_color="transparent")
+        time_row.pack(fill="x", padx=8, pady=4)
+
+        CTkButton(
+            time_row,
+            text="⏱ Set Time",
+            text_color="white",
+            fg_color="#272727",
+            border_width=1,
+            border_color="#555555",
+            anchor="w",
+            command=self.open_time_ui
+        ).pack(side="left", fill="x", expand=True)
+
+        if self.task.due_at:
+            self.clear_time_btn = CTkButton(
+                time_row,
+                text="✖",
+                text_color="white",
+                width=32,
+                fg_color="#612e2e",
+                border_width=1,
+                border_color="#ff6c6c",
+                hover_color="#ff4d4d",
+                command=self.clear_time
+            )
+            self.clear_time_btn.pack(side="right", padx=(6, 0))
+        else:
+            self.clear_time_btn = None
+
     # check if in cooldown, go to apply resize function
     def on_resize(self, event):
         if self.resize_cooldown:
@@ -395,6 +452,12 @@ class TaskUI(CTkFrame):
         CTkButton(
             self.header,
             text="ⓘ",
+            font=CTkFont(12),
+            fg_color="transparent",
+            hover_color="#000000",
+            text_color="white",
+            border_width=1,
+            border_color="#555555",
             width=30,
             command=lambda: self.winfo_toplevel().show_page_splash(self.splash_key)
         ).grid(row=0, column=3, rowspan=2, sticky="e", padx=(10, 0))
@@ -451,7 +514,15 @@ class TaskUI(CTkFrame):
         self.entry.grid(row=0, column=0, sticky="ew")
         self.entry.bind("<Return>", self.on_enter_post)
         
-        self.post_button = CTkButton(self.task_entry, text="post", command=self.on_enter_post)
+        self.post_button = CTkButton(
+            self.task_entry, 
+            text="post", 
+            text_color="white",
+            fg_color="#964900",
+            border_width=1,
+            border_color="#555555",
+            command=self.on_enter_post
+        )
         self.post_button.grid(row=0, column=1, sticky="e")
 
         # back button (required)
@@ -653,7 +724,6 @@ class TaskUI(CTkFrame):
         self.notification_service.check()
         self.after(30_000, self.check_due_dates)
 
-        
     def notify_task(self, task: TaskModel):
         popup = ctk.CTkToplevel(self)
         popup.title("⏰ Task Due")

@@ -76,6 +76,8 @@ root.update_idletasks()
 # calculate the center of the screen
 window_width = 1200
 window_height = 800
+root.minsize(window_width, window_height)
+
 screen_w = root.winfo_screenwidth()
 screen_h = root.winfo_screenheight()
 center_x = (screen_w // 2) - (window_width // 2)
