@@ -40,3 +40,6 @@ class TaskController:
         
     def get_anchor_seconds(self) -> int:
         return self.service.get_anchor_seconds()
+    
+    def mark_task_notified(self, task_id: str):
+        self.service.mark_task_notified(task_id)

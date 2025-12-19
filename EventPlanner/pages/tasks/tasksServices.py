@@ -1,4 +1,5 @@
 import json
+import datetime
 from .tasksModel import TaskModel
 
 class TaskServices():
@@ -89,3 +90,24 @@ class TaskServices():
 
         # fallback if countdown not wired
         return 365*24*60*60
+    
+    def mark_task_notified(self, task_id: str):
+        task = self.get_by_id(task_id)
+        if not task:
+            return
+        
+        task.notified = True
+        self.save() #! self.update task?
+        
+class TaskNotificationService:
+    def __init__(self, controller, on_notify):
+        self.controller = controller
+        self.on_notify = on_notify
+
+    def check(self):
+        now = datetime.datetime.now()
+
+        for task in self.controller.get_task():
+            if task.due_at and not task.notified and now >= task.due_at:
+                self.controller.mark_task_notified(task.id)
+                self.on_notify(task)

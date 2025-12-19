@@ -3,6 +3,7 @@ import customtkinter    as ctk
 import datetime
 from customtkinter      import CTkFrame, CTkEntry, CTkButton, CTkLabel, CTkCheckBox, CTkScrollableFrame, CTkFont, BooleanVar
 from .taskController    import TaskController
+from .tasksServices     import TaskNotificationService
 from .tasksModel        import TaskModel
 from .tasktimeUI        import TaskTimeUI
 
@@ -472,6 +473,13 @@ class TaskUI(CTkFrame):
         for task in self.controller.get_task():
             self.add_task_widget(task)
             
+        self.notification_service = TaskNotificationService(
+            controller=self.controller,
+            on_notify=self.notify_task
+        )
+
+        self.start_due_date_checker()
+
         self.update_tasks_display()
             
     def go_back(self):
@@ -638,6 +646,34 @@ class TaskUI(CTkFrame):
             text=f"{info['pending']} pending • {info['completed']} done"
         )
 
+    def start_due_date_checker(self):
+        self.check_due_dates()
+
+    def check_due_dates(self):
+        self.notification_service.check()
+        self.after(30_000, self.check_due_dates)
+
+        
+    def notify_task(self, task: TaskModel):
+        popup = ctk.CTkToplevel(self)
+        popup.title("⏰ Task Due")
+        popup.geometry("360x160")
+        popup.attributes("-topmost", True)
+
+        label = CTkLabel(
+            popup,
+            text=f"Task due:\n\n{task.text}",
+            font=CTkFont("Helvetica", 16, "bold"),
+            wraplength=320,
+            justify="center"
+        )
+        label.pack(padx=20, pady=20)
+
+        CTkButton(
+            popup,
+            text="OK",
+            command=popup.destroy
+        ).pack(pady=(0, 15))
 
 def show_frame(frame):
     frame.tkraise()

@@ -25,6 +25,10 @@ def format_duration(seconds: int) -> str:
 
     return " ".join(parts) if parts else "0s"
 
+HOUR = 3600
+DAY = 86400
+YEAR = 365 * DAY
+
 class TaskTimeUI(CTkToplevel):
     def __init__(self, parent, task, on_save, anchor_seconds, max_seconds=100000000):
         super().__init__(parent)
@@ -42,10 +46,17 @@ class TaskTimeUI(CTkToplevel):
         self.dial = TimeDial(
             max_seconds=self.max_seconds,
             anchor_seconds=  anchor_seconds,
-            inner_scale_seconds=180 * 24 * 3600 # half a year
         )
         self.last_time = datetime.datetime.now()
-        
+
+        # ring milestones
+        self.milestones = [
+            HOUR,
+            DAY,
+            YEAR,
+        ]
+        self.last_seconds = 0
+
         now = datetime.datetime.now()
         if task.due_at:
             delta = task.due_at - now
@@ -96,6 +107,17 @@ class TaskTimeUI(CTkToplevel):
             highlightthickness=0
         )
         self.canvas.pack(pady=10)
+        
+        # unhide per hour
+        self.hour_ring = self.canvas.create_oval(
+            self.center_x - self.max_radius,
+            self.center_y - self.max_radius,
+            self.center_x + self.max_radius,
+            self.center_y + self.max_radius,
+            outline="#ff6c6c",
+            width=3,
+            state="hidden"
+        )
         
         self.origin_radius = 4
         self.origin = self.canvas.create_oval(
@@ -213,9 +235,24 @@ class TaskTimeUI(CTkToplevel):
         if self.previewing:
             self.seconds = seconds
             self.update_tooltip()
+            
 
         # reflect time over
         self.seconds = seconds
+        self.update_time_ring()
+        
+        # pulse on milestone crossings
+        for mark in self.milestones:
+            if self.last_seconds < mark <= self.seconds:
+                self.pulse_ring()
+
+        # pulse on each additional year
+        last_year = self.last_seconds // YEAR
+        current_year = self.seconds // YEAR
+        if current_year > last_year:
+            self.pulse_ring()
+        self.last_seconds = self.seconds
+
         self.update_tooltip()
         self.after(16, self.tick) # ~60fps
     
@@ -332,12 +369,54 @@ class TaskTimeUI(CTkToplevel):
         # repeat
         self.snap_after_id = self.after(16, self.snap_step)
         
-    def compute_seconds(self):
-        return min(
-            self.base_seconds + int(self.overflow_seconds),
-            self.max_seconds
+    def update_time_ring(self):
+        result = self.get_active_milestone(self.seconds)
+        if result == (None, None):
+            self.canvas.itemconfigure(self.hour_ring, state="hidden")
+            return
+
+        start, end = result
+
+        fade = min((self.seconds - start) / (end - start), 1.0)
+        radius = self.max_radius * (1.0 - fade)
+
+        if radius <= 2:
+            self.canvas.itemconfigure(self.hour_ring, state="hidden")
+            return
+
+        self.canvas.coords(
+            self.hour_ring,
+            self.center_x - radius,
+            self.center_y - radius,
+            self.center_x + radius,
+            self.center_y + radius
         )
-        
+
+        self.canvas.itemconfigure(self.hour_ring, state="normal")
+
+    def get_active_milestone(self, seconds):
+        if seconds < HOUR:
+            return None, None
+
+        if seconds < DAY:
+            return HOUR, DAY
+        if seconds < YEAR:
+            return DAY, YEAR
+
+        # years and beyond
+        years = seconds // YEAR
+        start = years * YEAR
+        end = start + YEAR
+        return start, end
+    
+    def pulse_ring(self, step=0):
+        if step > 8:
+            self.canvas.itemconfigure(self.hour_ring, width=3)
+            return
+
+        self.canvas.itemconfigure(self.hour_ring, width=3 + step)
+        self.after(30, lambda: self.pulse_ring(step + 1))
+
     def save(self):
         now = datetime.datetime.now()
         due_at = now + datetime.timedelta(seconds=self.selected_seconds)
