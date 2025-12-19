@@ -93,7 +93,7 @@ class CountdownUI(CTkFrame):
         CTkButton(
             header_frame,
             text="ⓘ",
-            text_color="white",
+            text_color="black",
             width=30,
             height=30,
             fg_color="#FFFFFF",
