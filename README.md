@@ -1,5 +1,7 @@
 Event Planner Application
 
+<img width="626" height="392" alt="image" src="https://github.com/user-attachments/assets/68371c40-018a-4d7d-9fd5-bfd2c6a8baee" />
+
 A desktop-based Event Planner built with Python and CustomTkinter.
 The application helps users manage tasks, budgets, guests, and provides a centralized dashboard for navigation and overview.
 
